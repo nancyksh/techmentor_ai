@@ -416,18 +416,21 @@ def quiz_tutor_respond(data: QuizTutorRequest):
         }
         mission_focus = mission_guidance.get(data.mission_type, mission_guidance["Learning Mission"])
 
-        system_prompt = f"""You are NOVA, an adaptive AI tutor running a baseline assessment quiz on a technical topic.
+        answers_so_far = sum(1 for turn in data.history if turn.get("role") == "user") + 1
+        is_final_question = answers_so_far >= 2
+
+        system_prompt = f"""You are NOVA, an adaptive AI tutor running a short baseline assessment quiz on a technical topic.
 The current mission profile is "{data.mission_type}". {mission_focus}
-You ask probing questions to gauge the candidate's understanding, react to their answers, and decide when the assessment is complete.
+The assessment is intentionally short: only 2 questions total. Every question you ask must be substantive and detailed (2-3 sentences, with context or a concrete scenario where relevant) — never a short one-line question, since there is no room for a quick warm-up.
 Return a JSON object with EXACTLY these keys:
-- "reply": Your next message to the candidate. If the assessment isn't finished, ask a focused follow-up question about the topic that matches the mission profile's style, based on their answer. If finished, summarize their readiness.
+- "reply": Your next message to the candidate. If the assessment isn't finished, ask a detailed, well-developed follow-up question about the topic that matches the mission profile's style, based on their answer. If finished, give a thorough summary of their readiness, referencing both of their answers.
 - "readiness_delta": An integer from -5 to 5 reflecting how much their last answer should move their readiness score (negative for weak/incorrect answers, positive for strong ones, 0 if neutral).
-- "is_finished": true once you have asked 2 questions total (i.e. this is your reply to the 2nd answer) and are ready to conclude the assessment, otherwise false. Keep the assessment short — never exceed 2 questions.
+- "is_finished": {"true, since this is your reply to their 2nd and final answer — conclude the assessment now." if is_final_question else "false, since one more question remains after this."}
 
 Return ONLY valid JSON. No markdown, no introduction."""
 
         history_text = "\n".join(f"{turn.get('role', 'user')}: {turn.get('content', '')}" for turn in data.history)
-        user_prompt = f"Topic: {data.topic}\nMission Profile: {data.mission_type}\nConversation so far:\n{history_text}\n\nCandidate's latest answer: {data.answer}\n\nRespond as NOVA."
+        user_prompt = f"Topic: {data.topic}\nMission Profile: {data.mission_type}\nThis is answer #{answers_so_far} of 2.\nConversation so far:\n{history_text}\n\nCandidate's latest answer: {data.answer}\n\nRespond as NOVA."
 
         payload = {
             "model": "llama-3.3-70b-versatile",
@@ -461,13 +464,10 @@ Return ONLY valid JSON. No markdown, no introduction."""
         content = api_result["choices"][0]["message"]["content"]
         result = json.loads(content)
 
-        answers_so_far = sum(1 for turn in data.history if turn.get("role") == "user") + 1
-        is_finished = result.get("is_finished", False) or answers_so_far >= 2
-
         return QuizTutorResponse(
             reply=result.get("reply", "Could you elaborate further?"),
             readiness_delta=result.get("readiness_delta", 0),
-            is_finished=is_finished
+            is_finished=result.get("is_finished", False) or is_final_question
         )
 
     except Exception as e:

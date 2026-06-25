@@ -1,23 +1,25 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 
-export default function DigitalTwinDashboard({ activeTopic }: { activeTopic?: string | null }) {
+export default function DigitalTwinDashboard({ activeTopic, masteryTarget = 0 }: { activeTopic?: string | null; masteryTarget?: number }) {
   const [newTopicProgress, setNewTopicProgress] = useState(0);
 
   useEffect(() => {
     if (activeTopic) {
-      // Simulate the student "learning" the new topic after the syllabus is generated
-      setNewTopicProgress(0);
+      // Animate the student's mastery toward the real target driven by quiz/interview performance
       const interval = setInterval(() => {
         setNewTopicProgress(prev => {
-          if (prev < 15) return prev + 1; // Creep up to 15%
+          if (prev < masteryTarget) return prev + 1;
+          if (prev > masteryTarget) return prev - 1;
           clearInterval(interval);
           return prev;
         });
-      }, 800);
+      }, 80);
       return () => clearInterval(interval);
+    } else {
+      setNewTopicProgress(0);
     }
-  }, [activeTopic]);
+  }, [activeTopic, masteryTarget]);
 
   // Extract the core subject from sentences like "prepare me in 10 days for Computer Networks exam"
   const extractSubject = (text: string | null | undefined) => {

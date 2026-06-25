@@ -43,6 +43,12 @@ export default function Home() {
     };
   }, []);
 
+  // Only assessment-style missions warrant a mock interview stage; pure learning/revision ends at the quiz.
+  const requiresInterview = activeMissionType
+    ? ["Interview Mission", "Skill Gap Mission", "Placement Preparation Mission"].includes(activeMissionType)
+    : true;
+  const isFullyAssessed = requiresInterview ? !!interviewResult : isTutorFinished;
+
   const timelineSteps = [
     { step: "Goal Analysis", status: "done" },
     { step: "Strategy Generation", status: "done" },
@@ -50,11 +56,20 @@ export default function Home() {
     { step: "Learning Path Creation", status: "done" },
     { step: "Knowledge Assessment", status: isTutorFinished || interviewResult ? "done" : "active" },
     { step: "Adaptive Quiz", status: isTutorFinished || interviewResult ? "done" : "pending" },
-    { step: "Mock Interview", status: interviewResult ? "done" : isTutorFinished ? "active" : "pending" },
-    { step: "Readiness Evaluation", status: interviewResult ? "done" : "pending" },
-    { step: "Personalized Roadmap", status: interviewResult ? "active" : "pending" }
+    ...(requiresInterview ? [{ step: "Mock Interview", status: interviewResult ? "done" : isTutorFinished ? "active" : "pending" }] : []),
+    { step: "Readiness Evaluation", status: isFullyAssessed ? "done" : "pending" },
+    { step: "Personalized Roadmap", status: isFullyAssessed ? "active" : "pending" }
   ];
   const timelineProgress = Math.round((timelineSteps.filter(s => s.status === 'done').length / timelineSteps.length) * 100);
+
+  // Subject mastery should track real quiz/interview performance instead of a fixed simulated cap.
+  const masteryTarget = !activeCurriculum
+    ? 0
+    : isFullyAssessed
+    ? Math.min(100, readinessScore)
+    : isTutorFinished
+    ? Math.min(60, readinessScore)
+    : Math.min(40, tutorStep * 15 + 10);
 
   const [isTutorThinking, setIsTutorThinking] = useState(false);
 
@@ -232,7 +247,7 @@ export default function Home() {
                          <span className="flex items-center gap-1 text-emerald-300 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">✓ Planner</span>
                          <span className="flex items-center gap-1 text-emerald-300 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">✓ Research</span>
                          <span className="flex items-center gap-1 text-emerald-300 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">✓ Quiz</span>
-                         <span className="flex items-center gap-1 text-emerald-300 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">✓ Interview</span>
+                         {requiresInterview && <span className="flex items-center gap-1 text-emerald-300 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">✓ Interview</span>}
                          <span className="flex items-center gap-1 text-emerald-300 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">✓ Reflection</span>
                        </div>
                     </div>
@@ -244,8 +259,12 @@ export default function Home() {
                         <span className="px-1.5 py-0.5 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 rounded">Reinforce</span>
                         <span className="text-gray-600">→</span>
                         <span className="px-1.5 py-0.5 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 rounded">Quiz</span>
-                        <span className="text-gray-600">→</span>
-                        <span className="px-1.5 py-0.5 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 rounded">Interview</span>
+                        {requiresInterview && (
+                          <>
+                            <span className="text-gray-600">→</span>
+                            <span className="px-1.5 py-0.5 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 rounded">Interview</span>
+                          </>
+                        )}
                         <span className="text-gray-600">→</span>
                         <span className="px-1.5 py-0.5 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 rounded">Evaluate</span>
                       </div>
@@ -362,28 +381,28 @@ export default function Home() {
                         <div className="w-px h-3 bg-gray-800 ml-3 -my-1"></div>
 
                         {/* 5. Interview Agent */}
-                        <div className={`flex gap-3 items-start group ${interviewResult ? '' : 'opacity-50'}`}>
-                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] ${interviewResult ? 'border border-green-500/30 bg-green-900/20 text-green-400' : 'border border-gray-700 bg-gray-900 text-gray-500'}`}>{interviewResult ? '✓' : '◻'}</div>
+                        <div className={`flex gap-3 items-start group ${interviewResult || !requiresInterview ? '' : 'opacity-50'}`}>
+                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] ${interviewResult ? 'border border-green-500/30 bg-green-900/20 text-green-400' : !requiresInterview ? 'border border-gray-700 bg-gray-900 text-gray-600' : 'border border-gray-700 bg-gray-900 text-gray-500'}`}>{interviewResult ? '✓' : !requiresInterview ? '–' : '◻'}</div>
                            <div className="flex-1">
                               <div className="flex justify-between items-center">
                                 <p className={`text-xs font-bold flex items-center gap-1 ${interviewResult ? 'text-white' : 'text-gray-400'}`}>🎤 Interview Agent</p>
-                                <span className={`text-[9px] px-1.5 rounded border ${interviewResult ? 'text-green-400 border-green-500/20 bg-green-500/10' : 'text-gray-500 border-gray-700 bg-gray-800'}`}>{interviewResult ? 'Complete' : 'Pending'}</span>
+                                <span className={`text-[9px] px-1.5 rounded border ${interviewResult ? 'text-green-400 border-green-500/20 bg-green-500/10' : !requiresInterview ? 'text-gray-600 border-gray-700 bg-gray-800' : 'text-gray-500 border-gray-700 bg-gray-800'}`}>{interviewResult ? 'Complete' : !requiresInterview ? 'Not Required' : 'Pending'}</span>
                               </div>
-                              <p className={`text-[10px] ${interviewResult ? 'text-gray-400' : 'text-gray-500'}`}>Conducts interview simulation</p>
+                              <p className={`text-[10px] ${interviewResult ? 'text-gray-400' : 'text-gray-500'}`}>{requiresInterview ? 'Conducts interview simulation' : 'Skipped for this mission profile'}</p>
                            </div>
                         </div>
 
                         <div className="w-px h-3 bg-gray-800 ml-3 -my-1"></div>
 
                         {/* 6. Reflection Agent */}
-                        <div className={`flex gap-3 items-start group ${interviewResult ? '' : 'opacity-50'}`}>
-                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] ${interviewResult ? 'border border-green-500/30 bg-green-900/20 text-green-400' : 'border border-gray-700 bg-gray-900 text-gray-500'}`}>{interviewResult ? '✓' : '◻'}</div>
+                        <div className={`flex gap-3 items-start group ${isFullyAssessed ? '' : 'opacity-50'}`}>
+                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] ${isFullyAssessed ? 'border border-green-500/30 bg-green-900/20 text-green-400' : 'border border-gray-700 bg-gray-900 text-gray-500'}`}>{isFullyAssessed ? '✓' : '◻'}</div>
                            <div className="flex-1">
                               <div className="flex justify-between items-center">
-                                <p className={`text-xs font-bold flex items-center gap-1 ${interviewResult ? 'text-white' : 'text-gray-400'}`}>📊 Reflection Agent</p>
-                                <span className={`text-[9px] px-1.5 rounded border ${interviewResult ? 'text-green-400 border-green-500/20 bg-green-500/10' : 'text-gray-500 border-gray-700 bg-gray-800'}`}>{interviewResult ? 'Complete' : 'Pending'}</span>
+                                <p className={`text-xs font-bold flex items-center gap-1 ${isFullyAssessed ? 'text-white' : 'text-gray-400'}`}>📊 Reflection Agent</p>
+                                <span className={`text-[9px] px-1.5 rounded border ${isFullyAssessed ? 'text-green-400 border-green-500/20 bg-green-500/10' : 'text-gray-500 border-gray-700 bg-gray-800'}`}>{isFullyAssessed ? 'Complete' : 'Pending'}</span>
                               </div>
-                              <p className={`text-[10px] ${interviewResult ? 'text-gray-400' : 'text-gray-500'}`}>Evaluates performance & readiness</p>
+                              <p className={`text-[10px] ${isFullyAssessed ? 'text-gray-400' : 'text-gray-500'}`}>Evaluates performance & readiness</p>
                            </div>
                         </div>
 
@@ -585,7 +604,7 @@ export default function Home() {
             </div>
             )}
 
-            <DigitalTwinDashboard activeTopic={activeCurriculum} />
+            <DigitalTwinDashboard activeTopic={activeCurriculum} masteryTarget={masteryTarget} />
           </div>
 
           {/* Sidebar Area */}
