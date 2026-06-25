@@ -80,3 +80,13 @@ class QuestionGenerationRequest(BaseModel):
 class QuestionGenerationResponse(BaseModel):
     question_text: str
     starter_code: Dict[str, str]
+
+class QuizTutorRequest(BaseModel):
+    topic: str
+    history: list[Dict[str, str]] = []
+    answer: str
+
+class QuizTutorResponse(BaseModel):
+    reply: str
+    readiness_delta: int
+    is_finished: bool

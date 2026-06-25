@@ -5,7 +5,7 @@ from sqlalchemy.future import select
 from app.core.database import get_db
 from app.models.user import User
 from app.models.digital_twin import DigitalTwin
-from app.schemas.schemas import UserCreate, UserResponse, DigitalTwinResponse, InterviewEvaluationRequest, InterviewEvaluationResponse, CodingEvaluationRequest, CodingEvaluationResponse, CodeExecutionRequest, CodeExecutionResponse, CodeDebugRequest, CodeDebugResponse, QuestionGenerationRequest, QuestionGenerationResponse
+from app.schemas.schemas import UserCreate, UserResponse, DigitalTwinResponse, InterviewEvaluationRequest, InterviewEvaluationResponse, CodingEvaluationRequest, CodingEvaluationResponse, CodeExecutionRequest, CodeExecutionResponse, CodeDebugRequest, CodeDebugResponse, QuestionGenerationRequest, QuestionGenerationResponse, QuizTutorRequest, QuizTutorResponse
 import sys
 import os
 import json
@@ -395,3 +395,68 @@ Return ONLY valid JSON. No markdown, no introduction."""
     except Exception as e:
         print(f"Error generating question: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error generating question: {str(e)}")
+
+@router.post("/quiz-tutor/respond", response_model=QuizTutorResponse)
+def quiz_tutor_respond(data: QuizTutorRequest):
+    try:
+        import urllib.request
+        import urllib.error
+
+        load_dotenv()
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="GROQ_API_KEY is not set. Cannot run quiz tutor.")
+
+        system_prompt = """You are NOVA, an adaptive AI tutor running a baseline assessment quiz on a technical topic.
+You ask probing questions to gauge the candidate's understanding, react to their answers, and decide when the assessment is complete.
+Return a JSON object with EXACTLY these keys:
+- "reply": Your next message to the candidate. If the assessment isn't finished, ask a focused follow-up question about the topic based on their answer. If finished, summarize their readiness.
+- "readiness_delta": An integer from -5 to 5 reflecting how much their last answer should move their readiness score (negative for weak/incorrect answers, positive for strong ones, 0 if neutral).
+- "is_finished": true if you have asked enough questions (roughly 4-5 exchanges) to assess the candidate and are ready to conclude the assessment, otherwise false.
+
+Return ONLY valid JSON. No markdown, no introduction."""
+
+        history_text = "\n".join(f"{turn.get('role', 'user')}: {turn.get('content', '')}" for turn in data.history)
+        user_prompt = f"Topic: {data.topic}\nConversation so far:\n{history_text}\n\nCandidate's latest answer: {data.answer}\n\nRespond as NOVA."
+
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "temperature": 0.6,
+            "response_format": {"type": "json_object"}
+        }
+
+        req = urllib.request.Request(
+            "https://api.groq.com/openai/v1/chat/completions",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            },
+            method="POST"
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=15) as response:
+                response_text = response.read().decode("utf-8")
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode("utf-8")
+            raise Exception(f"Groq API HTTP Error: {e.code} - {error_body}")
+
+        api_result = json.loads(response_text)
+        content = api_result["choices"][0]["message"]["content"]
+        result = json.loads(content)
+
+        return QuizTutorResponse(
+            reply=result.get("reply", "Could you elaborate further?"),
+            readiness_delta=result.get("readiness_delta", 0),
+            is_finished=result.get("is_finished", False)
+        )
+
+    except Exception as e:
+        print(f"Error in quiz_tutor_respond: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")

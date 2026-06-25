@@ -56,42 +56,42 @@ export default function Home() {
   ];
   const timelineProgress = Math.round((timelineSteps.filter(s => s.status === 'done').length / timelineSteps.length) * 100);
 
-  const getTutorResponses = (topic: string | null) => {
-    const subject = topic || "this topic";
-    return [
-      `Objective analysis completed. Before entering the concept reinforcement phase, I need to assess your current understanding of ${subject} fundamentals.`,
-      `Initial data processing complete. Assessment phase activated. Quiz Agent has generated an adaptive evaluation tailored to your learning profile.`,
-      `Reviewing edge-case comprehension. Initiating subsystem evaluation for potential failure points in ${subject} architecture.`,
-      `Quiz Module complete. Analyzing cognitive gaps. Generating readiness score before handing off to Interview Agent.`,
-      `Objective met. Confidence threshold exceeded. Finalizing Student Intelligence Profile. Please proceed to the Mock Interview room when ready.`
-    ];
-  };
+  const [isTutorThinking, setIsTutorThinking] = useState(false);
 
-  const handleSendTutorMsg = () => {
-    if (!chatInput.trim()) return;
+  const handleSendTutorMsg = async () => {
+    if (!chatInput.trim() || isTutorThinking) return;
     const userMsg = chatInput;
+    const history = tutorMessages;
     setChatInput("");
     setTutorMessages(prev => [...prev, { role: "user", content: userMsg }]);
-    
-    // Mock the AI Tutor response
-    setTimeout(() => {
-      const responses = getTutorResponses(activeCurriculum);
-      setTutorMessages(prev => [...prev, { role: "ai", content: responses[tutorStep % responses.length] }]);
+    setIsTutorThinking(true);
+
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/quiz-tutor/respond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: activeCurriculum || "this topic", history, answer: userMsg })
+      });
+
+      if (!response.ok) {
+        throw new Error("API returned " + response.status);
+      }
+
+      const data = await response.json();
+
+      setTutorMessages(prev => [...prev, { role: "ai", content: data.reply }]);
       setTutorStep(prev => prev + 1);
-      
-      // Simulate dynamic Placement Readiness score changes (-2 to +3) after chatting for a bit
-      if (tutorStep > 0) {
-        const randomAdjustment = Math.floor(Math.random() * 6) - 2;
-        setReadinessScore(prev => {
-          const newScore = prev + randomAdjustment;
-          return Math.min(100, Math.max(0, newScore));
-        });
+      setReadinessScore(prev => Math.min(100, Math.max(0, prev + (data.readiness_delta || 0))));
+
+      if (data.is_finished) {
+        setTimeout(() => setIsTutorFinished(true), 1000);
       }
-      
-      if (tutorStep === 3) {
-        setTimeout(() => setIsTutorFinished(true), 2000);
-      }
-    }, 1000);
+    } catch (e) {
+      console.error("API error", e);
+      setTutorMessages(prev => [...prev, { role: "ai", content: "Failed to connect to AI tutor. Make sure your backend is running on port 8000!" }]);
+    } finally {
+      setIsTutorThinking(false);
+    }
   };
 
   const startAutonomousSequence = () => {
@@ -497,19 +497,25 @@ export default function Home() {
                              {msg.content}
                            </div>
                          ))}
+                         {isTutorThinking && (
+                           <div className="p-3 rounded-xl border text-sm max-w-[80%] w-fit bg-indigo-600/20 border-indigo-500/30 text-indigo-300 animate-pulse">
+                             NOVA is thinking...
+                           </div>
+                         )}
                       </div>
                       <div className="p-3 border-t border-gray-800 flex gap-2 bg-gray-900/50 rounded-b-xl">
-                         <input 
-                           type="text" 
+                         <input
+                           type="text"
                            value={chatInput}
                            onChange={(e) => setChatInput(e.target.value)}
                            onKeyDown={(e) => e.key === 'Enter' && handleSendTutorMsg()}
-                           className="flex-1 bg-black border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:border-indigo-500 outline-none transition-colors" 
-                           placeholder="Type your answer to NOVA to continue..." 
+                           disabled={isTutorThinking}
+                           className="flex-1 bg-black border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:border-indigo-500 outline-none transition-colors disabled:opacity-50"
+                           placeholder="Type your answer to NOVA to continue..."
                          />
-                         <button 
+                         <button
                            onClick={handleSendTutorMsg}
-                           disabled={!chatInput.trim()}
+                           disabled={!chatInput.trim() || isTutorThinking}
                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
                          >
                            Send
