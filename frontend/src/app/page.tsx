@@ -112,6 +112,9 @@ export default function Home() {
             <a href="/interview" className="px-6 py-2 rounded-full bg-white/5 hover:bg-white/10 transition-all font-medium border border-white/10">
               Mock Interview
             </a>
+            <a href="/coding-room" className="px-6 py-2 rounded-full bg-white/5 hover:bg-white/10 transition-all font-medium border border-white/10">
+              Coding Room
+            </a>
             <a href="/analytics" className="px-6 py-2 rounded-full bg-white/5 hover:bg-white/10 transition-all font-medium border border-white/10">
               View Analytics
             </a>

@@ -8,8 +8,6 @@ export default function InterviewRoom() {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [analysis, setAnalysis] = useState({ confidence: "N/A", clarity: "N/A" });
   const [review, setReview] = useState("");
-  const [hrReview, setHrReview] = useState("");
-  const [recruiterReview, setRecruiterReview] = useState("");
   
   const recognitionRef = useRef<any>(null);
   const isRecordingRef = useRef(false);
@@ -131,8 +129,6 @@ export default function InterviewRoom() {
       setReview(data.review);
       setAnalysis({ confidence: data.confidence, clarity: data.clarity });
       setQuestion(data.next_question);
-      setHrReview(data.hr_review || "");
-      setRecruiterReview(data.recruiter_review || "");
       setText('');
       finalTranscriptRef.current = '';
       
@@ -237,32 +233,6 @@ export default function InterviewRoom() {
                   <p className="text-sm font-bold">Tech Lead</p>
                   <p className="text-xs text-green-400">{isEvaluating ? 'Evaluating...' : isRecording ? 'Listening...' : review ? 'Feedback Given' : 'Waiting'}</p>
                 </div>
-              </div>
-              
-              <div className="bg-purple-900/40 border border-purple-500/30 rounded-xl p-4 flex flex-col gap-2">
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center ${isEvaluating ? 'animate-pulse' : ''}`}>H</div>
-                  <div>
-                    <p className="text-sm font-bold">HR Manager</p>
-                    <p className="text-xs text-purple-300">{isEvaluating ? 'Analyzing tone...' : hrReview ? 'Feedback Given' : 'Observing'}</p>
-                  </div>
-                </div>
-                {hrReview && (
-                  <p className="text-sm text-gray-300 mt-2 italic">"{hrReview}"</p>
-                )}
-              </div>
-
-              <div className="bg-emerald-900/40 border border-emerald-500/30 rounded-xl p-4 flex flex-col gap-2">
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center ${isEvaluating ? 'animate-pulse' : ''}`}>R</div>
-                  <div>
-                    <p className="text-sm font-bold">Recruiter</p>
-                    <p className="text-xs text-emerald-300">{isEvaluating ? 'Reviewing fit...' : recruiterReview ? 'Feedback Given' : 'Observing'}</p>
-                  </div>
-                </div>
-                {recruiterReview && (
-                  <p className="text-sm text-gray-300 mt-2 italic">"{recruiterReview}"</p>
-                )}
               </div>
             </div>
 

@@ -40,3 +40,43 @@ class InterviewEvaluationResponse(BaseModel):
     next_question: str
     hr_review: Optional[str] = None
     recruiter_review: Optional[str] = None
+
+class CodingEvaluationRequest(BaseModel):
+    question: str
+    code: str
+    language: str
+    stdout: str = ""
+    stderr: str = ""
+
+class CodingEvaluationResponse(BaseModel):
+    review: str
+    time_complexity: str
+    space_complexity: str
+    bugs_found: str
+
+class CodeExecutionRequest(BaseModel):
+    code: str
+    language: str
+
+class CodeExecutionResponse(BaseModel):
+    stdout: str
+    stderr: str
+    exit_code: int
+    execution_time_ms: float
+
+class CodeDebugRequest(BaseModel):
+    code: str
+    language: str
+    error: str
+
+class CodeDebugResponse(BaseModel):
+    explanation: str
+    fixed_code: str
+
+class QuestionGenerationRequest(BaseModel):
+    subject: str
+    difficulty: str = "Medium"
+
+class QuestionGenerationResponse(BaseModel):
+    question_text: str
+    starter_code: Dict[str, str]
