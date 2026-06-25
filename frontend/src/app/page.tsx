@@ -148,6 +148,20 @@ export default function Home() {
     setIsDeploying(false);
   };
 
+  const handleDeployNewMission = (recommendedTopic: string) => {
+    // Reset the previous mission's session state and pre-fill the next one
+    setActiveCurriculum(null);
+    setActiveMissionType(null);
+    setTutorMessages([]);
+    setTutorStep(0);
+    setIsTutorFinished(false);
+    setInterviewResult(null);
+    localStorage.removeItem('novaInterviewResult');
+    setTopic(recommendedTopic);
+    setMissionType("Skill Gap Mission");
+    setShowModal(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-950 text-white font-sans selection:bg-indigo-500/30">
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
@@ -308,7 +322,7 @@ export default function Home() {
                         <div className="flex flex-col"><span className="text-gray-500">Urgency:</span><span className="text-red-400 font-medium">High</span></div>
                         <div className="flex flex-col col-span-2"><span className="text-gray-500">Objective:</span><span className="text-white font-medium">{activeMissionType}</span></div>
                         <div className="flex flex-col col-span-2"><span className="text-gray-500">Detected Weak Areas:</span><span className="text-white font-medium">Normalization, Transactions</span></div>
-                        <div className="flex flex-col col-span-2"><span className="text-gray-500">Selected Strategy:</span><span className="text-cyan-300 font-mono text-[10px]">Assessment → Reinforcement → Interview</span></div>
+                        <div className="flex flex-col col-span-2"><span className="text-gray-500">Selected Strategy:</span><span className="text-cyan-300 font-mono text-[10px]">{requiresInterview ? "Assessment → Reinforcement → Interview" : "Assessment → Reinforcement → Evaluation"}</span></div>
                         <div className="flex flex-col"><span className="text-gray-500">Expected Outcome:</span><span className="text-emerald-400 font-medium">Readiness {">"} 80%</span></div>
                         <div className="flex flex-col"><span className="text-gray-500">Confidence:</span><span className="text-white font-medium">{interviewResult ? interviewResult.confidence : "94%"}</span></div>
                         {interviewResult && (
@@ -378,19 +392,22 @@ export default function Home() {
                            </div>
                         </div>
 
-                        <div className="w-px h-3 bg-gray-800 ml-3 -my-1"></div>
-
-                        {/* 5. Interview Agent */}
-                        <div className={`flex gap-3 items-start group ${interviewResult || !requiresInterview ? '' : 'opacity-50'}`}>
-                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] ${interviewResult ? 'border border-green-500/30 bg-green-900/20 text-green-400' : !requiresInterview ? 'border border-gray-700 bg-gray-900 text-gray-600' : 'border border-gray-700 bg-gray-900 text-gray-500'}`}>{interviewResult ? '✓' : !requiresInterview ? '–' : '◻'}</div>
-                           <div className="flex-1">
-                              <div className="flex justify-between items-center">
-                                <p className={`text-xs font-bold flex items-center gap-1 ${interviewResult ? 'text-white' : 'text-gray-400'}`}>🎤 Interview Agent</p>
-                                <span className={`text-[9px] px-1.5 rounded border ${interviewResult ? 'text-green-400 border-green-500/20 bg-green-500/10' : !requiresInterview ? 'text-gray-600 border-gray-700 bg-gray-800' : 'text-gray-500 border-gray-700 bg-gray-800'}`}>{interviewResult ? 'Complete' : !requiresInterview ? 'Not Required' : 'Pending'}</span>
-                              </div>
-                              <p className={`text-[10px] ${interviewResult ? 'text-gray-400' : 'text-gray-500'}`}>{requiresInterview ? 'Conducts interview simulation' : 'Skipped for this mission profile'}</p>
-                           </div>
-                        </div>
+                        {/* 5. Interview Agent — only relevant for assessment-style missions */}
+                        {requiresInterview && (
+                          <>
+                            <div className="w-px h-3 bg-gray-800 ml-3 -my-1"></div>
+                            <div className={`flex gap-3 items-start group ${interviewResult ? '' : 'opacity-50'}`}>
+                               <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] ${interviewResult ? 'border border-green-500/30 bg-green-900/20 text-green-400' : 'border border-gray-700 bg-gray-900 text-gray-500'}`}>{interviewResult ? '✓' : '◻'}</div>
+                               <div className="flex-1">
+                                  <div className="flex justify-between items-center">
+                                    <p className={`text-xs font-bold flex items-center gap-1 ${interviewResult ? 'text-white' : 'text-gray-400'}`}>🎤 Interview Agent</p>
+                                    <span className={`text-[9px] px-1.5 rounded border ${interviewResult ? 'text-green-400 border-green-500/20 bg-green-500/10' : 'text-gray-500 border-gray-700 bg-gray-800'}`}>{interviewResult ? 'Complete' : 'Pending'}</span>
+                                  </div>
+                                  <p className={`text-[10px] ${interviewResult ? 'text-gray-400' : 'text-gray-500'}`}>Conducts interview simulation</p>
+                               </div>
+                            </div>
+                          </>
+                        )}
 
                         <div className="w-px h-3 bg-gray-800 ml-3 -my-1"></div>
 
@@ -491,9 +508,9 @@ export default function Home() {
                   </div>
                   <div className="p-4 bg-gray-900/50 border border-gray-700 rounded-xl opacity-60 transition-colors relative overflow-hidden">
                     <div className="absolute top-0 right-0 px-3 py-1 bg-gray-700/50 text-gray-400 text-[10px] font-bold rounded-bl-lg">Pending</div>
-                    <h4 className="text-gray-300 font-bold text-sm mb-2">Module 3: Mock Interview & Evaluation</h4>
-                    <div className="text-xs text-gray-400 mb-1"><span className="text-gray-500">Responsible Agent:</span> Interview Agent</div>
-                    <div className="text-xs text-gray-400"><span className="text-gray-500">Objective:</span> Measure interview readiness and final evaluation.</div>
+                    <h4 className="text-gray-300 font-bold text-sm mb-2">{requiresInterview ? "Module 3: Mock Interview & Evaluation" : "Module 3: Final Evaluation"}</h4>
+                    <div className="text-xs text-gray-400 mb-1"><span className="text-gray-500">Responsible Agent:</span> {requiresInterview ? "Interview Agent" : "Reflection Agent"}</div>
+                    <div className="text-xs text-gray-400"><span className="text-gray-500">Objective:</span> {requiresInterview ? "Measure interview readiness and final evaluation." : "Evaluate quiz performance and finalize readiness score."}</div>
                   </div>
                 </div>
 
@@ -593,7 +610,10 @@ export default function Home() {
                        <div className="bg-black/30 rounded-xl p-4 border border-gray-800 flex flex-col justify-center">
                           <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-bold text-center">Recommended Next Topic</p>
                           <p className="text-lg font-bold text-indigo-400 text-center mb-4">Transaction Management</p>
-                          <button className="w-full py-2 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/50 text-indigo-300 rounded-lg text-sm transition-colors">
+                          <button
+                            onClick={() => handleDeployNewMission("Transaction Management")}
+                            className="w-full py-2 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/50 text-indigo-300 rounded-lg text-sm transition-colors"
+                          >
                             Deploy New Mission
                           </button>
                        </div>
