@@ -6,6 +6,7 @@ import DigitalTwinDashboard from '@/components/dashboard/DigitalTwinDashboard';
 import LiveFeed from '@/components/dashboard/LiveFeed';
 import CognitiveRadar from '@/components/dashboard/CognitiveRadar';
 import NeuralLogsTerminal from '@/components/dashboard/NeuralLogsTerminal';
+import { pushSessionEntry } from '@/lib/sessionHistory';
 
 export default function Home() {
   const [isDeploying, setIsDeploying] = useState(false);
@@ -96,9 +97,11 @@ export default function Home() {
 
       setTutorMessages(prev => [...prev, { role: "ai", content: data.reply }]);
       setTutorStep(prev => prev + 1);
-      setReadinessScore(prev => Math.min(100, Math.max(0, prev + (data.readiness_delta || 0))));
+      const newScore = Math.min(100, Math.max(0, readinessScore + (data.readiness_delta || 0)));
+      setReadinessScore(newScore);
 
       if (data.is_finished) {
+        pushSessionEntry({ date: new Date().toISOString(), type: "Quiz", topic: activeCurriculum || "General Topic", score: newScore });
         setTimeout(() => setIsTutorFinished(true), 1000);
       }
     } catch (e) {

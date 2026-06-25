@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
+import { pushSessionEntry, confidenceToScore } from '@/lib/sessionHistory';
 
 export default function InterviewRoom() {
   const [text, setText] = useState('');
@@ -145,6 +146,9 @@ export default function InterviewRoom() {
           completedAt: new Date().toISOString()
         }));
       }
+
+      const interviewScore = Math.round((confidenceToScore(data.confidence) + confidenceToScore(data.clarity)) / 2);
+      pushSessionEntry({ date: new Date().toISOString(), type: "Interview", topic: "Mock Interview", score: interviewScore });
       
     } catch (e) {
       console.error("API error", e);
