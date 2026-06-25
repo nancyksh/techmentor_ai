@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import HeroSection from '@/components/dashboard/HeroSection';
 import AgentCommandCenter from '@/components/agents/AgentCommandCenter';
 import DigitalTwinDashboard from '@/components/dashboard/DigitalTwinDashboard';
@@ -21,6 +21,40 @@ export default function Home() {
   const [tutorStep, setTutorStep] = useState(0);
   const [readinessScore, setReadinessScore] = useState(78);
   const [isTutorFinished, setIsTutorFinished] = useState(false);
+  const [interviewResult, setInterviewResult] = useState<{ completed: boolean; confidence: string; clarity: string; review: string; completedAt: string } | null>(null);
+
+  useEffect(() => {
+    const loadInterviewResult = () => {
+      const raw = localStorage.getItem('novaInterviewResult');
+      if (raw) {
+        try {
+          setInterviewResult(JSON.parse(raw));
+        } catch {
+          // ignore malformed cache
+        }
+      }
+    };
+    loadInterviewResult();
+    window.addEventListener('focus', loadInterviewResult);
+    window.addEventListener('storage', loadInterviewResult);
+    return () => {
+      window.removeEventListener('focus', loadInterviewResult);
+      window.removeEventListener('storage', loadInterviewResult);
+    };
+  }, []);
+
+  const timelineSteps = [
+    { step: "Goal Analysis", status: "done" },
+    { step: "Strategy Generation", status: "done" },
+    { step: "Agent Selection", status: "done" },
+    { step: "Learning Path Creation", status: "done" },
+    { step: "Knowledge Assessment", status: isTutorFinished || interviewResult ? "done" : "active" },
+    { step: "Adaptive Quiz", status: isTutorFinished || interviewResult ? "done" : "pending" },
+    { step: "Mock Interview", status: interviewResult ? "done" : isTutorFinished ? "active" : "pending" },
+    { step: "Readiness Evaluation", status: interviewResult ? "done" : "pending" },
+    { step: "Personalized Roadmap", status: interviewResult ? "active" : "pending" }
+  ];
+  const timelineProgress = Math.round((timelineSteps.filter(s => s.status === 'done').length / timelineSteps.length) * 100);
 
   const getTutorResponses = (topic: string | null) => {
     const subject = topic || "this topic";
@@ -228,19 +262,9 @@ export default function Home() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
                          <span>Overall Progress</span>
-                         <span className="text-purple-400 font-bold">44%</span>
+                         <span className="text-purple-400 font-bold">{timelineProgress}%</span>
                       </div>
-                      {[
-                        { step: "Goal Analysis", status: "done" },
-                        { step: "Strategy Generation", status: "done" },
-                        { step: "Agent Selection", status: "done" },
-                        { step: "Learning Path Creation", status: "done" },
-                        { step: "Knowledge Assessment", status: "active" },
-                        { step: "Adaptive Quiz", status: "pending" },
-                        { step: "Mock Interview", status: "pending" },
-                        { step: "Readiness Evaluation", status: "pending" },
-                        { step: "Personalized Roadmap", status: "pending" }
-                      ].map((item, i) => (
+                      {timelineSteps.map((item, i) => (
                         <div key={i} className={`flex items-center gap-3 text-sm ${item.status === 'pending' ? 'opacity-50' : ''}`}>
                           {item.status === 'done' && <span className="w-5 h-5 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center border border-green-500/30 text-xs">✓</span>}
                           {item.status === 'active' && <span className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30 text-xs animate-pulse">⏳</span>}
@@ -267,7 +291,13 @@ export default function Home() {
                         <div className="flex flex-col col-span-2"><span className="text-gray-500">Detected Weak Areas:</span><span className="text-white font-medium">Normalization, Transactions</span></div>
                         <div className="flex flex-col col-span-2"><span className="text-gray-500">Selected Strategy:</span><span className="text-cyan-300 font-mono text-[10px]">Assessment → Reinforcement → Interview</span></div>
                         <div className="flex flex-col"><span className="text-gray-500">Expected Outcome:</span><span className="text-emerald-400 font-medium">Readiness {">"} 80%</span></div>
-                        <div className="flex flex-col"><span className="text-gray-500">Confidence:</span><span className="text-white font-medium">94%</span></div>
+                        <div className="flex flex-col"><span className="text-gray-500">Confidence:</span><span className="text-white font-medium">{interviewResult ? interviewResult.confidence : "94%"}</span></div>
+                        {interviewResult && (
+                          <div className="flex flex-col col-span-2 pt-2 border-t border-white/5">
+                            <span className="text-gray-500">Last Interview Review:</span>
+                            <span className="text-cyan-200 text-[11px] leading-relaxed">{interviewResult.review}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     
@@ -332,28 +362,28 @@ export default function Home() {
                         <div className="w-px h-3 bg-gray-800 ml-3 -my-1"></div>
 
                         {/* 5. Interview Agent */}
-                        <div className="flex gap-3 items-start group opacity-50">
-                           <div className="w-6 h-6 rounded-full border border-gray-700 bg-gray-900 text-gray-500 flex items-center justify-center shrink-0 mt-0.5 text-[10px]">◻</div>
+                        <div className={`flex gap-3 items-start group ${interviewResult ? '' : 'opacity-50'}`}>
+                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] ${interviewResult ? 'border border-green-500/30 bg-green-900/20 text-green-400' : 'border border-gray-700 bg-gray-900 text-gray-500'}`}>{interviewResult ? '✓' : '◻'}</div>
                            <div className="flex-1">
                               <div className="flex justify-between items-center">
-                                <p className="text-xs font-bold text-gray-400 flex items-center gap-1">🎤 Interview Agent</p>
-                                <span className="text-[9px] text-gray-500 border border-gray-700 bg-gray-800 px-1.5 rounded">Pending</span>
+                                <p className={`text-xs font-bold flex items-center gap-1 ${interviewResult ? 'text-white' : 'text-gray-400'}`}>🎤 Interview Agent</p>
+                                <span className={`text-[9px] px-1.5 rounded border ${interviewResult ? 'text-green-400 border-green-500/20 bg-green-500/10' : 'text-gray-500 border-gray-700 bg-gray-800'}`}>{interviewResult ? 'Complete' : 'Pending'}</span>
                               </div>
-                              <p className="text-[10px] text-gray-500">Conducts interview simulation</p>
+                              <p className={`text-[10px] ${interviewResult ? 'text-gray-400' : 'text-gray-500'}`}>Conducts interview simulation</p>
                            </div>
                         </div>
 
                         <div className="w-px h-3 bg-gray-800 ml-3 -my-1"></div>
 
                         {/* 6. Reflection Agent */}
-                        <div className="flex gap-3 items-start group opacity-50">
-                           <div className="w-6 h-6 rounded-full border border-gray-700 bg-gray-900 text-gray-500 flex items-center justify-center shrink-0 mt-0.5 text-[10px]">◻</div>
+                        <div className={`flex gap-3 items-start group ${interviewResult ? '' : 'opacity-50'}`}>
+                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] ${interviewResult ? 'border border-green-500/30 bg-green-900/20 text-green-400' : 'border border-gray-700 bg-gray-900 text-gray-500'}`}>{interviewResult ? '✓' : '◻'}</div>
                            <div className="flex-1">
                               <div className="flex justify-between items-center">
-                                <p className="text-xs font-bold text-gray-400 flex items-center gap-1">📊 Reflection Agent</p>
-                                <span className="text-[9px] text-gray-500 border border-gray-700 bg-gray-800 px-1.5 rounded">Pending</span>
+                                <p className={`text-xs font-bold flex items-center gap-1 ${interviewResult ? 'text-white' : 'text-gray-400'}`}>📊 Reflection Agent</p>
+                                <span className={`text-[9px] px-1.5 rounded border ${interviewResult ? 'text-green-400 border-green-500/20 bg-green-500/10' : 'text-gray-500 border-gray-700 bg-gray-800'}`}>{interviewResult ? 'Complete' : 'Pending'}</span>
                               </div>
-                              <p className="text-[10px] text-gray-500">Evaluates performance & readiness</p>
+                              <p className={`text-[10px] ${interviewResult ? 'text-gray-400' : 'text-gray-500'}`}>Evaluates performance & readiness</p>
                            </div>
                         </div>
 

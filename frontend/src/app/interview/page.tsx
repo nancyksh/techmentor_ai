@@ -131,6 +131,16 @@ export default function InterviewRoom() {
       setQuestion(data.next_question);
       setText('');
       finalTranscriptRef.current = '';
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('novaInterviewResult', JSON.stringify({
+          completed: true,
+          confidence: data.confidence,
+          clarity: data.clarity,
+          review: data.review,
+          completedAt: new Date().toISOString()
+        }));
+      }
       
     } catch (e) {
       console.error("API error", e);
