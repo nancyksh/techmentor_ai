@@ -70,7 +70,7 @@ export default function Home() {
       const response = await fetch("http://localhost:8000/api/v1/quiz-tutor/respond", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: activeCurriculum || "this topic", history, answer: userMsg })
+        body: JSON.stringify({ topic: activeCurriculum || "this topic", mission_type: activeMissionType || "Learning Mission", history, answer: userMsg })
       });
 
       if (!response.ok) {

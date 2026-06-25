@@ -83,6 +83,7 @@ class QuestionGenerationResponse(BaseModel):
 
 class QuizTutorRequest(BaseModel):
     topic: str
+    mission_type: str = "Learning Mission"
     history: list[Dict[str, str]] = []
     answer: str
 

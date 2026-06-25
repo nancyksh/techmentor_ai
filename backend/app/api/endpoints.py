@@ -407,17 +407,27 @@ def quiz_tutor_respond(data: QuizTutorRequest):
         if not api_key:
             raise HTTPException(status_code=500, detail="GROQ_API_KEY is not set. Cannot run quiz tutor.")
 
-        system_prompt = """You are NOVA, an adaptive AI tutor running a baseline assessment quiz on a technical topic.
+        mission_guidance = {
+            "Learning Mission": "Focus on teaching-style questions that build foundational understanding step by step. Favor 'what is' and 'how does X work' questions, and gently correct misconceptions in your follow-ups.",
+            "Interview Mission": "Ask questions in the style of a technical interviewer assessing job-readiness: problem-solving, trade-offs, and real-world application scenarios, similar to what a hiring panel would ask.",
+            "Revision Mission": "Treat this as a rapid-fire recap for someone who has already studied the topic. Ask concise recall and clarification questions covering key facts, rather than teaching from scratch.",
+            "Skill Gap Mission": "Probe specifically for weaknesses. Ask pointed, slightly harder questions designed to surface what the candidate does NOT know, and drill into any shaky answers with a tougher follow-up.",
+            "Placement Preparation Mission": "Simulate placement-test style questions: a mix of conceptual depth and applied problem-solving, similar to campus recruitment technical rounds, with an emphasis on practical readiness."
+        }
+        mission_focus = mission_guidance.get(data.mission_type, mission_guidance["Learning Mission"])
+
+        system_prompt = f"""You are NOVA, an adaptive AI tutor running a baseline assessment quiz on a technical topic.
+The current mission profile is "{data.mission_type}". {mission_focus}
 You ask probing questions to gauge the candidate's understanding, react to their answers, and decide when the assessment is complete.
 Return a JSON object with EXACTLY these keys:
-- "reply": Your next message to the candidate. If the assessment isn't finished, ask a focused follow-up question about the topic based on their answer. If finished, summarize their readiness.
+- "reply": Your next message to the candidate. If the assessment isn't finished, ask a focused follow-up question about the topic that matches the mission profile's style, based on their answer. If finished, summarize their readiness.
 - "readiness_delta": An integer from -5 to 5 reflecting how much their last answer should move their readiness score (negative for weak/incorrect answers, positive for strong ones, 0 if neutral).
-- "is_finished": true if you have asked enough questions (roughly 4-5 exchanges) to assess the candidate and are ready to conclude the assessment, otherwise false.
+- "is_finished": true once you have asked 2 questions total (i.e. this is your reply to the 2nd answer) and are ready to conclude the assessment, otherwise false. Keep the assessment short — never exceed 2 questions.
 
 Return ONLY valid JSON. No markdown, no introduction."""
 
         history_text = "\n".join(f"{turn.get('role', 'user')}: {turn.get('content', '')}" for turn in data.history)
-        user_prompt = f"Topic: {data.topic}\nConversation so far:\n{history_text}\n\nCandidate's latest answer: {data.answer}\n\nRespond as NOVA."
+        user_prompt = f"Topic: {data.topic}\nMission Profile: {data.mission_type}\nConversation so far:\n{history_text}\n\nCandidate's latest answer: {data.answer}\n\nRespond as NOVA."
 
         payload = {
             "model": "llama-3.3-70b-versatile",
@@ -451,10 +461,13 @@ Return ONLY valid JSON. No markdown, no introduction."""
         content = api_result["choices"][0]["message"]["content"]
         result = json.loads(content)
 
+        answers_so_far = sum(1 for turn in data.history if turn.get("role") == "user") + 1
+        is_finished = result.get("is_finished", False) or answers_so_far >= 2
+
         return QuizTutorResponse(
             reply=result.get("reply", "Could you elaborate further?"),
             readiness_delta=result.get("readiness_delta", 0),
-            is_finished=result.get("is_finished", False)
+            is_finished=is_finished
         )
 
     except Exception as e:
