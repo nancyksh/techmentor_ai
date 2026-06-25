@@ -8,6 +8,8 @@ export default function InterviewRoom() {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [analysis, setAnalysis] = useState({ confidence: "N/A", clarity: "N/A" });
   const [review, setReview] = useState("");
+  const [hrReview, setHrReview] = useState("");
+  const [recruiterReview, setRecruiterReview] = useState("");
   
   const recognitionRef = useRef<any>(null);
   const isRecordingRef = useRef(false);
@@ -127,6 +129,8 @@ export default function InterviewRoom() {
       const data = await response.json();
       
       setReview(data.review);
+      setHrReview(data.hr_review || "");
+      setRecruiterReview(data.recruiter_review || "");
       setAnalysis({ confidence: data.confidence, clarity: data.clarity });
       setQuestion(data.next_question);
       setText('');
@@ -244,6 +248,20 @@ export default function InterviewRoom() {
                   <p className="text-xs text-green-400">{isEvaluating ? 'Evaluating...' : isRecording ? 'Listening...' : review ? 'Feedback Given' : 'Waiting'}</p>
                 </div>
               </div>
+              <div className="bg-emerald-900/30 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-4 transition-all">
+                <div className={`w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center ${isEvaluating ? 'animate-pulse' : ''}`}>H</div>
+                <div>
+                  <p className="text-sm font-bold">HR Manager</p>
+                  <p className="text-xs text-green-400">{isEvaluating ? 'Evaluating...' : isRecording ? 'Listening...' : hrReview ? 'Feedback Given' : 'Waiting'}</p>
+                </div>
+              </div>
+              <div className="bg-orange-900/30 border border-orange-500/30 rounded-xl p-4 flex items-center gap-4 transition-all">
+                <div className={`w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center ${isEvaluating ? 'animate-pulse' : ''}`}>R</div>
+                <div>
+                  <p className="text-sm font-bold">Recruiter</p>
+                  <p className="text-xs text-green-400">{isEvaluating ? 'Evaluating...' : isRecording ? 'Listening...' : recruiterReview ? 'Feedback Given' : 'Waiting'}</p>
+                </div>
+              </div>
             </div>
 
             <div className="bg-gray-900/80 border border-gray-700 rounded-xl p-4 mt-8">
@@ -268,8 +286,22 @@ export default function InterviewRoom() {
 
             {review && (
               <div className="bg-indigo-900/20 border border-indigo-500/50 rounded-xl p-4 mt-4">
-                <h4 className="text-xs text-indigo-400 uppercase tracking-wider mb-2">AI Feedback on Last Answer</h4>
+                <h4 className="text-xs text-indigo-400 uppercase tracking-wider mb-2">Tech Lead Feedback</h4>
                 <p className="text-sm text-gray-300 leading-relaxed">{review}</p>
+              </div>
+            )}
+
+            {hrReview && (
+              <div className="bg-emerald-900/20 border border-emerald-500/50 rounded-xl p-4 mt-4">
+                <h4 className="text-xs text-emerald-400 uppercase tracking-wider mb-2">HR Manager Feedback</h4>
+                <p className="text-sm text-gray-300 leading-relaxed">{hrReview}</p>
+              </div>
+            )}
+
+            {recruiterReview && (
+              <div className="bg-orange-900/20 border border-orange-500/50 rounded-xl p-4 mt-4">
+                <h4 className="text-xs text-orange-400 uppercase tracking-wider mb-2">Recruiter Feedback</h4>
+                <p className="text-sm text-gray-300 leading-relaxed">{recruiterReview}</p>
               </div>
             )}
 
