@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function HeroSection({ readinessScore = 0, activeMission = null }: { readinessScore?: number; activeMission?: string | null }) {
+export default function HeroSection({ readinessScore = 0, readinessLabel = "Readiness Score", activeMission = null }: { readinessScore?: number; readinessLabel?: string; activeMission?: string | null }) {
   return (
     <section className="relative overflow-hidden bg-[#1A1718]/80 border border-gray-800 rounded-3xl p-8 md:p-10 backdrop-blur-2xl shadow-2xl">
       {/* Subtle Background Glows for Premium Aesthetic */}
@@ -44,7 +44,7 @@ export default function HeroSection({ readinessScore = 0, activeMission = null }
           {/* Card 1: Interview Readiness */}
           <div className="relative group bg-gradient-to-b from-gray-900 to-black border border-gray-800 rounded-2xl p-6 min-w-[220px] hover:border-indigo-500/50 transition-all duration-300 shadow-lg">
             <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
-            <p className="text-xs text-indigo-400 font-bold uppercase tracking-widest mb-2">Interview Readiness</p>
+            <p className="text-xs text-indigo-400 font-bold uppercase tracking-widest mb-2">{readinessLabel}</p>
             <div className="flex items-end gap-1">
               <p className="text-5xl font-extrabold text-white">{readinessScore}</p>
               <span className="text-2xl text-gray-500 font-bold mb-1">%</span>

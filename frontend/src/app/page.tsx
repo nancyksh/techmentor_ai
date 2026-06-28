@@ -6,7 +6,7 @@ import DigitalTwinDashboard from '@/components/dashboard/DigitalTwinDashboard';
 import LiveFeed from '@/components/dashboard/LiveFeed';
 import CognitiveRadar from '@/components/dashboard/CognitiveRadar';
 import NeuralLogsTerminal from '@/components/dashboard/NeuralLogsTerminal';
-import { pushSessionEntry } from '@/lib/sessionHistory';
+import { pushSessionEntry, confidenceToScore } from '@/lib/sessionHistory';
 import { apiFetch } from '@/lib/api';
 
 export default function Home() {
@@ -24,6 +24,7 @@ export default function Home() {
   const [readinessScore, setReadinessScore] = useState(0);
   const [isTutorFinished, setIsTutorFinished] = useState(false);
   const [interviewResult, setInterviewResult] = useState<{ completed: boolean; confidence: string; clarity: string; review: string; completedAt: string } | null>(null);
+  const appliedInterviewAt = React.useRef<string | null>(null);
 
   useEffect(() => {
     const loadInterviewResult = () => {
@@ -44,6 +45,15 @@ export default function Home() {
       window.removeEventListener('storage', loadInterviewResult);
     };
   }, []);
+
+  // Fold the Mock Interview's confidence/clarity into the readiness score once per completed interview,
+  // since it previously only reflected quiz answers and ignored the interview entirely.
+  useEffect(() => {
+    if (!interviewResult || appliedInterviewAt.current === interviewResult.completedAt) return;
+    appliedInterviewAt.current = interviewResult.completedAt;
+    const interviewScore = Math.round((confidenceToScore(interviewResult.confidence) + confidenceToScore(interviewResult.clarity)) / 2);
+    setReadinessScore(prev => prev > 0 ? Math.round((prev + interviewScore) / 2) : interviewScore);
+  }, [interviewResult]);
 
   // Only assessment-style missions warrant a mock interview stage; pure learning/revision ends at the quiz.
   const requiresInterview = activeMissionType
@@ -203,7 +213,7 @@ export default function Home() {
         </header>
 
         {/* Hero Section */}
-        <HeroSection readinessScore={readinessScore} activeMission={activeCurriculum && activeMissionType ? `${activeCurriculum} ${activeMissionType.replace(" Mission", "")}` : null} />
+        <HeroSection readinessScore={readinessScore} readinessLabel={activeMissionType && requiresInterview ? "Interview Readiness" : "Readiness Score"} activeMission={activeCurriculum && activeMissionType ? `${activeCurriculum} ${activeMissionType.replace(" Mission", "")}` : null} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content Area */}
