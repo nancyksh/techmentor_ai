@@ -29,5 +29,6 @@ async def root():
     return {"message": "Welcome to TechMentor AI Professor API"}
 
 @app.get("/health")
+@app.head("/health")
 async def health_check():
-    return {"status": "healthy"}
+    return {"status": "ok"}
