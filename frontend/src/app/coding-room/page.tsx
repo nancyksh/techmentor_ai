@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { apiFetch } from '@/lib/api';
 
 const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
@@ -11,34 +12,42 @@ export default function CodingRoom() {
   const [starterCodes, setStarterCodes] = useState<any>({});
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [isGenerating, setIsGenerating] = useState(true);
+  const [isSlow, setIsSlow] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [review, setReview] = useState("");
   const [timeComplexity, setTimeComplexity] = useState("N/A");
   const [spaceComplexity, setSpaceComplexity] = useState("N/A");
   const [bugs, setBugs] = useState("None");
 
+  const fetchQuestion = async () => {
+    try {
+      setIsGenerating(true);
+      setIsSlow(false);
+      setLoadError("");
+      const res = await apiFetch("/api/v1/coding-room/generate-question", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: "Data Structures and Algorithms", difficulty: "Medium" })
+      }, () => setIsSlow(true));
+      if (!res.ok) throw new Error("API returned " + res.status);
+      const data = await res.json();
+      setQuestion(data.question_text);
+      setStarterCodes(data.starter_code);
+      setCode(data.starter_code['python']);
+    } catch (err) {
+      console.error("Failed to generate question:", err);
+      setLoadError("Couldn't load a question from the AI engine.");
+      setQuestion("No question loaded.");
+    } finally {
+      setIsGenerating(false);
+      setIsSlow(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchQuestion = async () => {
-      try {
-        setIsGenerating(true);
-        const res = await fetch("http://localhost:8000/api/v1/coding-room/generate-question", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subject: "Data Structures and Algorithms", difficulty: "Medium" })
-        });
-        const data = await res.json();
-        setQuestion(data.question_text);
-        setStarterCodes(data.starter_code);
-        setCode(data.starter_code['python']);
-      } catch (err) {
-        console.error("Failed to generate question:", err);
-        setQuestion("Failed to load question. Please refresh.");
-      } finally {
-        setIsGenerating(false);
-      }
-    };
     fetchQuestion();
   }, []);
-  
+
 
   // Execution State
   const [isRunning, setIsRunning] = useState(false);
@@ -49,30 +58,30 @@ export default function CodingRoom() {
   const [debugExplanation, setDebugExplanation] = useState("");
   const handleSubmit = async () => {
     if (!code.trim()) return;
-    
+
     setIsEvaluating(true);
-    
+
     try {
-      const response = await fetch("http://localhost:8000/api/v1/coding-room/evaluate", {
+      const response = await apiFetch("/api/v1/coding-room/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, code, language, stdout: terminalOutput, stderr: terminalError })
       });
-      
+
       if (!response.ok) {
         throw new Error("API returned " + response.status);
       }
-      
+
       const data = await response.json();
-      
+
       setReview(data.review);
       setTimeComplexity(data.time_complexity);
       setSpaceComplexity(data.space_complexity);
       setBugs(data.bugs_found);
-      
+
     } catch (e) {
       console.error("API error", e);
-      alert("Failed to connect to AI API. Make sure your backend is running on port 8000!");
+      setReview("Couldn't reach the AI review engine. Please try Submit Code again.");
     } finally {
       setIsEvaluating(false);
     }
@@ -80,32 +89,32 @@ export default function CodingRoom() {
 
   const handleRunCode = async () => {
     if (!code.trim()) return;
-    
+
     setIsRunning(true);
     setTerminalOutput("Executing...");
     setTerminalError("");
     setExecutionTime(null);
-    
+
     try {
-      const response = await fetch("http://localhost:8000/api/v1/coding-room/execute", {
+      const response = await apiFetch("/api/v1/coding-room/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, language })
       });
-      
+
       if (!response.ok) {
         throw new Error("API returned " + response.status);
       }
-      
+
       const data = await response.json();
-      
+
       setTerminalOutput(data.stdout || "");
       setTerminalError(data.stderr || "");
       setExecutionTime(data.execution_time_ms);
-      
+
     } catch (e) {
       console.error("API error", e);
-      setTerminalError("Failed to connect to execution engine. Ensure backend is running.");
+      setTerminalError("Couldn't reach the execution engine. Please try Run Code again.");
       setTerminalOutput("");
     } finally {
       setIsRunning(false);
@@ -115,31 +124,31 @@ export default function CodingRoom() {
 
   const handleDebugCode = async () => {
     if (!code.trim()) return;
-    
+
     setIsDebugging(true);
     setDebugExplanation("Analyzing code and error...");
-    
+
     try {
-      const response = await fetch("http://localhost:8000/api/v1/coding-room/debug", {
+      const response = await apiFetch("/api/v1/coding-room/debug", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, language, error: terminalError || terminalOutput || "The program logic is incorrect but there was no explicit error output." })
       });
-      
+
       if (!response.ok) {
         throw new Error("API returned " + response.status);
       }
-      
+
       const data = await response.json();
-      
+
       setDebugExplanation(data.explanation);
       if (data.fixed_code) {
         setCode(data.fixed_code);
       }
-      
+
     } catch (e) {
       console.error("API error", e);
-      setDebugExplanation("Failed to connect to AI debugging engine. Ensure backend is running.");
+      setDebugExplanation("Couldn't reach the AI debugging engine. Please try Debug Code again.");
     } finally {
       setIsDebugging(false);
     }
@@ -189,6 +198,18 @@ export default function CodingRoom() {
                     Problem Statement
                 </h2>
                 <p className="text-gray-300 mt-2 text-md leading-relaxed relative z-10">{question}</p>
+                {isGenerating && isSlow && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-amber-400 relative z-10">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                    Waking up the AI engine — first load can take up to a minute on the free tier...
+                  </div>
+                )}
+                {loadError && (
+                  <div className="mt-2 flex items-center gap-3 text-xs text-red-400 relative z-10">
+                    <span>{loadError}</span>
+                    <button onClick={fetchQuestion} className="px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 font-medium">Retry</button>
+                  </div>
+                )}
                 <div className="mt-4 flex gap-2 relative z-10">
                     <select 
                         value={language}

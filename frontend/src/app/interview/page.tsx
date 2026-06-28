@@ -1,12 +1,15 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { pushSessionEntry, confidenceToScore } from '@/lib/sessionHistory';
+import { apiFetch } from '@/lib/api';
 
 export default function InterviewRoom() {
   const [text, setText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [question, setQuestion] = useState("Loading question...");
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [isSlow, setIsSlow] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [analysis, setAnalysis] = useState({ confidence: "N/A", clarity: "N/A" });
   const [review, setReview] = useState("");
   const [hrReview, setHrReview] = useState("");
@@ -108,21 +111,23 @@ export default function InterviewRoom() {
     if (!text.trim()) return;
     
     setIsEvaluating(true);
-    
+    setIsSlow(false);
+    setSubmitError("");
+
     // Force stop recording on submit
     if (isRecordingRef.current) {
       isRecordingRef.current = false;
       setIsRecording(false);
       recognitionRef.current?.stop();
     }
-    
+
     try {
-      const response = await fetch("http://localhost:8000/api/v1/interview/evaluate", {
+      const response = await apiFetch("/api/v1/interview/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, answer: text })
-      });
-      
+      }, () => setIsSlow(true));
+
       if (!response.ok) {
         throw new Error("API returned " + response.status);
       }
@@ -152,9 +157,10 @@ export default function InterviewRoom() {
       
     } catch (e) {
       console.error("API error", e);
-      alert("Failed to connect to AI API. Make sure your backend is running!");
+      setSubmitError("Couldn't reach the AI interviewer. Please try Submit Answer again.");
     } finally {
       setIsEvaluating(false);
+      setIsSlow(false);
     }
   };
 
@@ -192,6 +198,18 @@ export default function InterviewRoom() {
                 </div>
                 <h2 className="text-2xl font-bold mb-2">Technical Interviewer</h2>
                 <p className="text-gray-300 mt-4 max-w-2xl mx-auto text-lg leading-relaxed">"{question}"</p>
+                {isEvaluating && isSlow && (
+                  <div className="mt-3 flex items-center justify-center gap-2 text-xs text-amber-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                    Waking up the AI engine — first load can take up to a minute on the free tier...
+                  </div>
+                )}
+                {submitError && (
+                  <div className="mt-3 flex items-center justify-center gap-3 text-xs text-red-400">
+                    <span>{submitError}</span>
+                    <button onClick={handleSubmit} className="px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 font-medium">Retry</button>
+                  </div>
+                )}
               </div>
               
               <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-4">

@@ -7,6 +7,7 @@ import LiveFeed from '@/components/dashboard/LiveFeed';
 import CognitiveRadar from '@/components/dashboard/CognitiveRadar';
 import NeuralLogsTerminal from '@/components/dashboard/NeuralLogsTerminal';
 import { pushSessionEntry } from '@/lib/sessionHistory';
+import { apiFetch } from '@/lib/api';
 
 export default function Home() {
   const [isDeploying, setIsDeploying] = useState(false);
@@ -73,6 +74,7 @@ export default function Home() {
     : Math.min(40, tutorStep * 15 + 10);
 
   const [isTutorThinking, setIsTutorThinking] = useState(false);
+  const [isTutorSlow, setIsTutorSlow] = useState(false);
 
   const handleSendTutorMsg = async () => {
     if (!chatInput.trim() || isTutorThinking) return;
@@ -81,13 +83,14 @@ export default function Home() {
     setChatInput("");
     setTutorMessages(prev => [...prev, { role: "user", content: userMsg }]);
     setIsTutorThinking(true);
+    setIsTutorSlow(false);
 
     try {
-      const response = await fetch("http://localhost:8000/api/v1/quiz-tutor/respond", {
+      const response = await apiFetch("/api/v1/quiz-tutor/respond", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ topic: activeCurriculum || "this topic", mission_type: activeMissionType || "Learning Mission", history, answer: userMsg })
-      });
+      }, () => setIsTutorSlow(true));
 
       if (!response.ok) {
         throw new Error("API returned " + response.status);
@@ -106,9 +109,10 @@ export default function Home() {
       }
     } catch (e) {
       console.error("API error", e);
-      setTutorMessages(prev => [...prev, { role: "ai", content: "Failed to connect to AI tutor. Make sure your backend is running on port 8000!" }]);
+      setTutorMessages(prev => [...prev, { role: "ai", content: "Couldn't reach the AI tutor — please send your answer again." }]);
     } finally {
       setIsTutorThinking(false);
+      setIsTutorSlow(false);
     }
   };
 
@@ -538,7 +542,7 @@ export default function Home() {
                          ))}
                          {isTutorThinking && (
                            <div className="p-3 rounded-xl border text-sm max-w-[80%] w-fit bg-indigo-600/20 border-indigo-500/30 text-indigo-300 animate-pulse">
-                             NOVA is thinking...
+                             {isTutorSlow ? "Waking up the AI engine — first load can take up to a minute..." : "NOVA is thinking..."}
                            </div>
                          )}
                       </div>
