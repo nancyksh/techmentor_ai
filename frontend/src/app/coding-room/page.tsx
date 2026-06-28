@@ -158,7 +158,7 @@ export default function CodingRoom() {
     <div className="min-h-screen bg-gray-950 text-white font-sans selection:bg-indigo-500/30">
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
       
-      <main className="relative container mx-auto px-4 py-8 flex flex-col h-screen">
+      <main className="relative container mx-auto px-4 py-8 flex flex-col min-h-screen">
         <header className="flex justify-between items-center pb-6 border-b border-white/10 shrink-0">
           <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
             <span className="text-indigo-500 font-extrabold tracking-tight">CORTEX</span>
@@ -230,7 +230,7 @@ export default function CodingRoom() {
                 </div>
             </div>
 
-            <div className="flex-1 bg-[#1e1e1e] border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
+            <div className="flex-1 min-h-[420px] bg-[#1e1e1e] border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
               <Editor
                 height="100%"
                 language={language}

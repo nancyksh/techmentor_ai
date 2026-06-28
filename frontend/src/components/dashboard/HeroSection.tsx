@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function HeroSection({ readinessScore = 78 }: { readinessScore?: number }) {
+export default function HeroSection({ readinessScore = 0, activeMission = null }: { readinessScore?: number; activeMission?: string | null }) {
   return (
     <section className="relative overflow-hidden bg-[#1A1718]/80 border border-gray-800 rounded-3xl p-8 md:p-10 backdrop-blur-2xl shadow-2xl">
       {/* Subtle Background Glows for Premium Aesthetic */}
@@ -34,7 +34,7 @@ export default function HeroSection({ readinessScore = 78 }: { readinessScore?: 
               Current Mission
             </p>
             <div className="flex items-center gap-3">
-              <span className="text-white font-semibold text-lg">Master Operating Systems (Deadlocks)</span>
+              <span className="text-white font-semibold text-lg">{activeMission || "No mission deployed yet"}</span>
             </div>
           </div>
         </div>

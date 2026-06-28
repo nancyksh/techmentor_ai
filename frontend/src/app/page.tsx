@@ -21,7 +21,7 @@ export default function Home() {
   const [tutorMessages, setTutorMessages] = useState<{role: string, content: string}[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [tutorStep, setTutorStep] = useState(0);
-  const [readinessScore, setReadinessScore] = useState(78);
+  const [readinessScore, setReadinessScore] = useState(0);
   const [isTutorFinished, setIsTutorFinished] = useState(false);
   const [interviewResult, setInterviewResult] = useState<{ completed: boolean; confidence: string; clarity: string; review: string; completedAt: string } | null>(null);
 
@@ -63,6 +63,11 @@ export default function Home() {
     { step: "Personalized Roadmap", status: isFullyAssessed ? "active" : "pending" }
   ];
   const timelineProgress = Math.round((timelineSteps.filter(s => s.status === 'done').length / timelineSteps.length) * 100);
+  const activeAgentCount = 3 + (requiresInterview ? 1 : 0) + 1; // Planner, Research, Quiz, [Interview], Reflection
+  const currentStage = timelineSteps.find(s => s.status === 'active')?.step
+    || timelineSteps.slice().reverse().find(s => s.status === 'done')?.step
+    || timelineSteps[0].step;
+  const nextStage = timelineSteps.find(s => s.status === 'pending')?.step || "Mission Complete";
 
   // Subject mastery should track real quiz/interview performance instead of a fixed simulated cap.
   const masteryTarget = !activeCurriculum
@@ -198,7 +203,7 @@ export default function Home() {
         </header>
 
         {/* Hero Section */}
-        <HeroSection readinessScore={readinessScore} />
+        <HeroSection readinessScore={readinessScore} activeMission={activeCurriculum && activeMissionType ? `${activeCurriculum} ${activeMissionType.replace(" Mission", "")}` : null} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content Area */}
@@ -227,21 +232,21 @@ export default function Home() {
                       <div className="flex justify-between items-end">
                         <div>
                           <p className="text-xs text-gray-500 mb-1">Progress</p>
-                          <p className="text-3xl font-extrabold text-indigo-400">68<span className="text-lg text-gray-500">%</span></p>
+                          <p className="text-3xl font-extrabold text-indigo-400">{timelineProgress}<span className="text-lg text-gray-500">%</span></p>
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-gray-500 mb-1">Active Agents</p>
-                          <p className="text-xl font-bold text-white">5</p>
+                          <p className="text-xl font-bold text-white">{activeAgentCount}</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-800">
                         <div>
                           <p className="text-xs text-gray-500 mb-1">Current Stage</p>
-                          <p className="text-sm font-medium text-emerald-400">Knowledge Assessment</p>
+                          <p className="text-sm font-medium text-emerald-400">{currentStage}</p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-500 mb-1">Next Stage</p>
-                          <p className="text-sm font-medium text-gray-300">Adaptive Quiz</p>
+                          <p className="text-sm font-medium text-gray-300">{nextStage}</p>
                         </div>
                       </div>
                     </div>
