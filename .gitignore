@@ -23,3 +23,12 @@ Docker Desktop Installer.exe
 # OS
 .DS_Store
 Thumbs.db
+
+# Python caches and test artefacts (anywhere in the repo)
+__pycache__/
+*.pyc
+.pytest_cache/
+backend/test_techmentor.db
+
+# Report generator dependencies
+report/node_modules/

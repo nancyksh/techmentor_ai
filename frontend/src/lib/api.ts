@@ -26,7 +26,7 @@ export async function apiFetch(
 
   try {
     return await attempt(45000);
-  } catch (err) {
+  } catch {
     // One retry in case the cold-start wake-up landed mid-request.
     return await attempt(45000);
   }

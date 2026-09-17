@@ -1,4 +1,6 @@
 "use client";
+import Link from 'next/link';
+import Markdown from '@/components/Markdown';
 import React, { useState, useEffect } from 'react';
 import HeroSection from '@/components/dashboard/HeroSection';
 import AgentCommandCenter from '@/components/agents/AgentCommandCenter';
@@ -189,27 +191,27 @@ export default function Home() {
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
       
       <main className="relative container mx-auto px-4 py-8 space-y-12">
-        <header className="flex justify-between items-center pb-8 border-b border-white/10">
-          <h1 className="text-3xl font-bold text-indigo-500 tracking-tight">
+        <header className="flex flex-wrap justify-between items-center gap-4 pb-8 border-b border-white/10">
+          <h1 className="text-2xl sm:text-3xl font-bold text-indigo-500 tracking-tight">
             CORTEX
           </h1>
-          <div className="flex gap-4">
-            <a href="/interview" className="px-6 py-2 rounded-full bg-white/5 hover:bg-white/10 transition-all font-medium border border-white/10">
+          <nav className="flex flex-wrap gap-2 sm:gap-4">
+            <Link href="/interview" className="px-4 sm:px-6 py-2 text-sm sm:text-base rounded-full bg-white/5 hover:bg-white/10 transition-all font-medium border border-white/10">
               Mock Interview
-            </a>
-            <a href="/coding-room" className="px-6 py-2 rounded-full bg-white/5 hover:bg-white/10 transition-all font-medium border border-white/10">
+            </Link>
+            <Link href="/coding-room" className="px-4 sm:px-6 py-2 text-sm sm:text-base rounded-full bg-white/5 hover:bg-white/10 transition-all font-medium border border-white/10">
               Coding Room
-            </a>
-            <a href="/analytics" className="px-6 py-2 rounded-full bg-white/5 hover:bg-white/10 transition-all font-medium border border-white/10">
+            </Link>
+            <Link href="/analytics" className="px-4 sm:px-6 py-2 text-sm sm:text-base rounded-full bg-white/5 hover:bg-white/10 transition-all font-medium border border-white/10">
               View Analytics
-            </a>
+            </Link>
             <button 
               onClick={() => setShowModal(true)}
-              className="px-6 py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 transition-all font-medium shadow-[0_0_15px_rgba(79,70,229,0.5)] whitespace-nowrap"
+              className="px-4 sm:px-6 py-2 text-sm sm:text-base rounded-full bg-indigo-600 hover:bg-indigo-500 transition-all font-medium shadow-[0_0_15px_rgba(79,70,229,0.5)] whitespace-nowrap"
             >
               Start Autonomous Mode
             </button>
-          </div>
+          </nav>
         </header>
 
         {/* Hero Section */}
@@ -218,7 +220,7 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content Area */}
           <div className="lg:col-span-2 space-y-8">
-            <AgentCommandCenter />
+            <AgentCommandCenter activeTopic={activeCurriculum} />
             
             {activeCurriculum && activeMissionType && (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -237,7 +239,7 @@ export default function Home() {
                       <div>
                         <p className="text-xs text-gray-500 mb-1">Current Mission</p>
                         <p className="text-lg font-bold text-white leading-tight">{activeCurriculum} {activeMissionType.replace(" Mission", "")}</p>
-                        <p className="text-xs text-gray-400 mt-2 italic bg-black/30 p-2 rounded border border-gray-800">Source Request: "{activeCurriculum}"</p>
+                        <p className="text-xs text-gray-400 mt-2 italic bg-black/30 p-2 rounded border border-gray-800">Source Request: “{activeCurriculum}”</p>
                       </div>
                       <div className="flex justify-between items-end">
                         <div>
@@ -343,10 +345,10 @@ export default function Home() {
                         <div className="flex flex-col"><span className="text-gray-500">Topic:</span><span className="text-white font-medium">{activeCurriculum}</span></div>
                         <div className="flex flex-col"><span className="text-gray-500">Urgency:</span><span className="text-red-400 font-medium">High</span></div>
                         <div className="flex flex-col col-span-2"><span className="text-gray-500">Objective:</span><span className="text-white font-medium">{activeMissionType}</span></div>
-                        <div className="flex flex-col col-span-2"><span className="text-gray-500">Detected Weak Areas:</span><span className="text-white font-medium">Normalization, Transactions</span></div>
+                        <div className="flex flex-col col-span-2"><span className="text-gray-500">Detected Weak Areas:</span><span className="text-white font-medium">{interviewResult ? "See the interview review below" : "Identified after the quiz and interview"}</span></div>
                         <div className="flex flex-col col-span-2"><span className="text-gray-500">Selected Strategy:</span><span className="text-cyan-300 font-mono text-[10px]">{requiresInterview ? "Assessment → Reinforcement → Interview" : "Assessment → Reinforcement → Evaluation"}</span></div>
                         <div className="flex flex-col"><span className="text-gray-500">Expected Outcome:</span><span className="text-emerald-400 font-medium">Readiness {">"} 80%</span></div>
-                        <div className="flex flex-col"><span className="text-gray-500">Confidence:</span><span className="text-white font-medium">{interviewResult ? interviewResult.confidence : "94%"}</span></div>
+                        <div className="flex flex-col"><span className="text-gray-500">Confidence:</span><span className="text-white font-medium">{interviewResult ? interviewResult.confidence : "Pending"}</span></div>
                         {interviewResult && (
                           <div className="flex flex-col col-span-2 pt-2 border-t border-white/5">
                             <span className="text-gray-500">Last Interview Review:</span>
@@ -467,6 +469,7 @@ export default function Home() {
                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                      <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                      Agent Activity Log
+                     <span className="ml-auto text-[10px] font-medium uppercase tracking-wider text-gray-400 border border-gray-700 px-2 py-0.5 rounded-full" title="Illustrates how the agents coordinate; not live system output">Simulated</span>
                    </h3>
                    <div className="space-y-3 h-32 overflow-y-auto pr-2 scrollbar-hide">
                      <div className="flex gap-4 text-sm bg-black/30 p-2 rounded border border-gray-800 border-l-2 border-l-emerald-500">
@@ -512,7 +515,7 @@ export default function Home() {
                 </div>
                 
                 <p className="text-gray-300 mb-6 font-medium bg-black/20 p-4 rounded-xl border border-white/5">
-                  Goal: <span className="text-indigo-300 italic">"{activeCurriculum}"</span>
+                  Goal: <span className="text-indigo-300 italic">“{activeCurriculum}”</span>
                 </p>
 
                 <div className="space-y-4">
@@ -546,13 +549,13 @@ export default function Home() {
                       <div className="flex-1 overflow-y-auto p-4 space-y-4">
                          <div className="bg-indigo-600/20 p-3 rounded-xl border border-indigo-500/30 w-fit max-w-[80%]">
                             <p className="text-sm text-indigo-100 leading-relaxed">
-                              Training sequence initialized. Beginning baseline assessment phase for <span className="font-bold text-white">"{activeCurriculum}"</span>. 
+                              Training sequence initialized. Beginning baseline assessment phase for <span className="font-bold text-white">“{activeCurriculum}”</span>. 
                               Please input your current understanding of the core architectural concepts.
                             </p>
                          </div>
                          {tutorMessages.map((msg, i) => (
                            <div key={i} className={`p-3 rounded-xl border text-sm max-w-[80%] w-fit ${msg.role === 'user' ? 'bg-gray-800 border-gray-700 self-end ml-auto text-gray-200' : 'bg-indigo-600/20 border-indigo-500/30 text-indigo-100'}`}>
-                             {msg.content}
+                             {msg.role === 'user' ? msg.content : <Markdown>{msg.content}</Markdown>}
                            </div>
                          ))}
                          {isTutorThinking && (
@@ -597,43 +600,37 @@ export default function Home() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                        <div className="space-y-4">
                           <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-bold">Strong Areas</p>
-                            <div className="space-y-1">
-                               <div className="text-sm text-gray-300 flex items-center gap-2"><span className="text-emerald-400">✓</span> SQL Queries</div>
-                               <div className="text-sm text-gray-300 flex items-center gap-2"><span className="text-emerald-400">✓</span> ER Modeling</div>
-                            </div>
+                            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-bold">Assessed Topic</p>
+                            <p className="text-sm text-gray-200">{activeCurriculum}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-bold">Weak Areas</p>
-                            <div className="space-y-1">
-                               <div className="text-sm text-gray-300 flex items-center gap-2"><span className="text-red-400">✗</span> Normalization</div>
-                               <div className="text-sm text-gray-300 flex items-center gap-2"><span className="text-red-400">✗</span> Transactions</div>
-                            </div>
+                            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-bold">Quiz Exchanges</p>
+                            <p className="text-sm text-gray-200">{tutorStep} answered</p>
                           </div>
+                          {interviewResult && (
+                            <div>
+                              <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-bold">Interview</p>
+                              <p className="text-sm text-gray-200">Confidence {interviewResult.confidence} · Clarity {interviewResult.clarity}</p>
+                            </div>
+                          )}
                        </div>
                        <div className="space-y-6">
                           <div>
                              <p className="text-xs text-gray-500 mb-1">Subject Mastery</p>
-                             <div className="flex items-end gap-2">
-                               <span className="text-3xl font-bold text-white">76%</span>
-                               <span className="text-sm text-emerald-400 mb-1">↑ 4%</span>
-                             </div>
-                             <div className="w-full bg-gray-800 h-1.5 rounded-full mt-2"><div className="bg-emerald-500 h-1.5 rounded-full w-[76%]"></div></div>
+                             <span className="text-3xl font-bold text-white">{masteryTarget}%</span>
+                             <div className="w-full bg-gray-800 h-1.5 rounded-full mt-2"><div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${masteryTarget}%` }}></div></div>
                           </div>
                           <div>
-                             <p className="text-xs text-gray-500 mb-1">Interview Readiness</p>
-                             <div className="flex items-end gap-2">
-                               <span className="text-3xl font-bold text-white">82%</span>
-                               <span className="text-sm text-emerald-400 mb-1">↑ 7%</span>
-                             </div>
-                             <div className="w-full bg-gray-800 h-1.5 rounded-full mt-2"><div className="bg-indigo-500 h-1.5 rounded-full w-[82%]"></div></div>
+                             <p className="text-xs text-gray-500 mb-1">{requiresInterview ? "Interview Readiness" : "Readiness Score"}</p>
+                             <span className="text-3xl font-bold text-white">{readinessScore}%</span>
+                             <div className="w-full bg-gray-800 h-1.5 rounded-full mt-2"><div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${readinessScore}%` }}></div></div>
                           </div>
                        </div>
                        <div className="bg-black/30 rounded-xl p-4 border border-gray-800 flex flex-col justify-center">
-                          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-bold text-center">Recommended Next Topic</p>
-                          <p className="text-lg font-bold text-indigo-400 text-center mb-4">Transaction Management</p>
+                          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-bold text-center">Recommended Next Step</p>
+                          <p className="text-lg font-bold text-indigo-400 text-center mb-4">{readinessScore >= 70 ? `Advanced ${activeCurriculum}` : `Revise ${activeCurriculum} fundamentals`}</p>
                           <button
-                            onClick={() => handleDeployNewMission("Transaction Management")}
+                            onClick={() => handleDeployNewMission(readinessScore >= 70 ? `Advanced ${activeCurriculum}` : `${activeCurriculum} fundamentals`)}
                             className="w-full py-2 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/50 text-indigo-300 rounded-lg text-sm transition-colors"
                           >
                             Deploy New Mission
@@ -652,7 +649,7 @@ export default function Home() {
           {/* Sidebar Area */}
           <div className="lg:col-span-1 relative">
             <div className="space-y-6 sticky top-8 h-[calc(100vh-4rem)] overflow-y-auto pb-8 pr-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-800 [&::-webkit-scrollbar-thumb]:rounded-full">
-              <LiveFeed activeTopic={activeCurriculum} />
+              <LiveFeed key={activeCurriculum ?? 'idle'} activeTopic={activeCurriculum} />
               <CognitiveRadar activeTopic={activeCurriculum} />
               <NeuralLogsTerminal activeTopic={activeCurriculum} />
             </div>

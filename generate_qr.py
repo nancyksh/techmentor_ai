@@ -1,7 +1,7 @@
 import qrcode
 
 # Replace this with your actual Vercel/Render URL during submission!
-project_url = "https://techmentor-ai.vercel.app" 
+project_url = "https://nancy-25etcs126011-techmentor.vercel.app"
 
 qr = qrcode.QRCode(
     version=1,

@@ -1,6 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 
+// Fixed bar pattern: random heights during render break React purity and hydration
+const TELEMETRY_HEIGHTS = [35, 70, 50, 90, 40, 65, 25, 80, 55, 45, 75, 30];
+
 export default function LiveFeed({ activeTopic }: { activeTopic?: string | null }) {
   const topic = activeTopic || "Core Concepts";
 
@@ -21,15 +24,8 @@ export default function LiveFeed({ activeTopic }: { activeTopic?: string | null 
 
   const [messages, setMessages] = useState(() => getInitialMessages(topic));
   const [eventIndex, setEventIndex] = useState(0);
-  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setMessages(getInitialMessages(topic));
-  }, [topic]);
-
-  useEffect(() => {
-    setIsMounted(true);
-    
     const interval = setInterval(() => {
       const events = getMockLiveEvents(topic);
       const nextEvent = events[eventIndex];
@@ -53,6 +49,7 @@ export default function LiveFeed({ activeTopic }: { activeTopic?: string | null 
           <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
         </span>
         Live Collaboration Feed
+        <span className="ml-auto text-[10px] font-medium uppercase tracking-wider text-gray-400 border border-gray-700 px-2 py-0.5 rounded-full" title="Illustrates how the agents coordinate; not live system output">Simulated</span>
       </h3>
       
       <div className="space-y-4 overflow-hidden relative max-h-[400px]">
@@ -84,7 +81,7 @@ export default function LiveFeed({ activeTopic }: { activeTopic?: string | null 
               key={i} 
               className="w-full bg-indigo-500/50 rounded-t-sm animate-pulse" 
               style={{ 
-                height: isMounted ? `${Math.max(20, Math.random() * 100)}%` : '20%',
+                height: `${TELEMETRY_HEIGHTS[i % TELEMETRY_HEIGHTS.length]}%`,
                 animationDelay: `${i * 0.1}s`,
                 animationDuration: '1s'
               }}

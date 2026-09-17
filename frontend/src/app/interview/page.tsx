@@ -1,7 +1,33 @@
 "use client";
+import Link from 'next/link';
+import Markdown from '@/components/Markdown';
 import React, { useState, useEffect, useRef } from 'react';
 import { pushSessionEntry, confidenceToScore } from '@/lib/sessionHistory';
 import { apiFetch } from '@/lib/api';
+
+// Minimal typing for the browser's Web Speech API (not in TypeScript's DOM lib)
+type SpeechRecognitionResultEvent = {
+  resultIndex: number;
+  results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }>;
+};
+type SpeechRecognitionInstance = {
+  continuous: boolean;
+  interimResults: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: ((event: SpeechRecognitionResultEvent) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onend: (() => void) | null;
+};
+type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
+
+const STARTER_QUESTIONS = [
+  "Please explain how a hash map resolves collisions.",
+  "What is the difference between TCP and UDP?",
+  "Can you explain the concept of 'Time Complexity' in Big-O notation?",
+  "How does a load balancer work?",
+  "Explain the concept of Dependency Injection."
+];
 
 export default function InterviewRoom() {
   const [text, setText] = useState('');
@@ -10,35 +36,32 @@ export default function InterviewRoom() {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [isSlow, setIsSlow] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [micError, setMicError] = useState("");
   const [analysis, setAnalysis] = useState({ confidence: "N/A", clarity: "N/A" });
   const [review, setReview] = useState("");
   const [hrReview, setHrReview] = useState("");
   const [recruiterReview, setRecruiterReview] = useState("");
   
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const isRecordingRef = useRef(false);
   const finalTranscriptRef = useRef('');
 
   useEffect(() => {
-    // Randomize initial question
-    const starters = [
-      "Please explain how a hash map resolves collisions.",
-      "What is the difference between TCP and UDP?",
-      "Can you explain the concept of 'Time Complexity' in Big-O notation?",
-      "How does a load balancer work?",
-      "Explain the concept of Dependency Injection."
-    ];
-    setQuestion(starters[Math.floor(Math.random() * starters.length)]);
+    // Pick the opening question after mount; doing it during render would mismatch the server-rendered HTML
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setQuestion(STARTER_QUESTIONS[Math.floor(Math.random() * STARTER_QUESTIONS.length)]);
 
     if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const speechWindow = window as unknown as { SpeechRecognition?: SpeechRecognitionConstructor; webkitSpeechRecognition?: SpeechRecognitionConstructor };
+      const SpeechRecognition = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
       
       if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.interimResults = true;
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+        recognition.continuous = true;
+        recognition.interimResults = true;
         
-        recognitionRef.current.onresult = (event: any) => {
+        recognition.onresult = (event) => {
           let interimTranscript = '';
           
           for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -53,20 +76,25 @@ export default function InterviewRoom() {
           setText(finalTranscriptRef.current + interimTranscript);
         };
         
-        recognitionRef.current.onerror = (event: any) => {
+        recognition.onerror = (event) => {
           console.error('Speech error:', event.error);
           if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-             isRecordingRef.current = false;
-             setIsRecording(false);
+            isRecordingRef.current = false;
+            setIsRecording(false);
+            setMicError("Microphone access denied. Click the 🔒 icon in your browser's address bar and allow microphone access, then refresh.");
+          } else if (event.error === 'no-speech') {
+            // Ignore — common when mic is open but user isn't speaking yet
+          } else {
+            setMicError(`Microphone error: ${event.error}. Try refreshing the page.`);
           }
         };
         
-        recognitionRef.current.onend = () => {
+        recognition.onend = () => {
           // If we want it to be continuous and the user hasn't clicked stop:
           if (isRecordingRef.current) {
             try {
-              recognitionRef.current.start();
-            } catch (e) {
+              recognition.start();
+            } catch {
               // Ignore restart errors
             }
           }
@@ -84,9 +112,10 @@ export default function InterviewRoom() {
 
   const toggleRecording = () => {
     if (!recognitionRef.current) {
-      alert("Microphone API not supported. Please use Google Chrome.");
+      setMicError("Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
       return;
     }
+    setMicError("");
 
     if (isRecordingRef.current) {
       // STOP recording
@@ -101,7 +130,7 @@ export default function InterviewRoom() {
       setText(''); // Reset UI
       try {
         recognitionRef.current.start();
-      } catch (e) {
+      } catch {
         // It might already be started
       }
     }
@@ -169,21 +198,21 @@ export default function InterviewRoom() {
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
       
       <main className="relative container mx-auto px-4 py-8 space-y-12">
-        <header className="flex justify-between items-center pb-8 border-b border-white/10">
-          <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+        <header className="flex flex-wrap justify-between items-center gap-4 pb-8 border-b border-white/10">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-3">
             <span className="text-indigo-500 font-extrabold tracking-tight">CORTEX</span>
             <span className="text-gray-500 font-light text-2xl">|</span>
             AI Interview Room
           </h1>
-          <div className="flex gap-4">
-            <a href="/" className="px-6 py-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10 font-medium">
+          <nav className="flex flex-wrap gap-2 sm:gap-4">
+            <Link href="/" className="px-4 sm:px-6 py-2 text-sm sm:text-base rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10 font-medium">
               Back to Dashboard
-            </a>
-            <a href="/analytics" className="px-6 py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 transition-colors font-medium shadow-[0_0_15px_rgba(79,70,229,0.5)] flex items-center gap-2">
+            </Link>
+            <Link href="/analytics" className="px-4 sm:px-6 py-2 text-sm sm:text-base rounded-full bg-indigo-600 hover:bg-indigo-500 transition-colors font-medium shadow-[0_0_15px_rgba(79,70,229,0.5)] flex items-center gap-2">
               End Interview & View Analytics
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
-            </a>
-          </div>
+            </Link>
+          </nav>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -197,11 +226,16 @@ export default function InterviewRoom() {
                   <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                 </div>
                 <h2 className="text-2xl font-bold mb-2">Technical Interviewer</h2>
-                <p className="text-gray-300 mt-4 max-w-2xl mx-auto text-lg leading-relaxed">"{question}"</p>
+                <p className="text-gray-300 mt-4 max-w-2xl mx-auto text-lg leading-relaxed">“{question}”</p>
                 {isEvaluating && isSlow && (
                   <div className="mt-3 flex items-center justify-center gap-2 text-xs text-amber-400">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
                     Waking up the AI engine — first load can take up to a minute on the free tier...
+                  </div>
+                )}
+                {micError && (
+                  <div className="mt-3 px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/40 text-xs text-red-300 text-left max-w-md mx-auto">
+                    {micError}
                   </div>
                 )}
                 {submitError && (
@@ -309,21 +343,21 @@ export default function InterviewRoom() {
             {review && (
               <div className="bg-indigo-900/20 border border-indigo-500/50 rounded-xl p-4 mt-4">
                 <h4 className="text-xs text-indigo-400 uppercase tracking-wider mb-2">Tech Lead Feedback</h4>
-                <p className="text-sm text-gray-300 leading-relaxed">{review}</p>
+                <Markdown className="text-sm text-gray-300 leading-relaxed">{review}</Markdown>
               </div>
             )}
 
             {hrReview && (
               <div className="bg-emerald-900/20 border border-emerald-500/50 rounded-xl p-4 mt-4">
                 <h4 className="text-xs text-emerald-400 uppercase tracking-wider mb-2">HR Manager Feedback</h4>
-                <p className="text-sm text-gray-300 leading-relaxed">{hrReview}</p>
+                <Markdown className="text-sm text-gray-300 leading-relaxed">{hrReview}</Markdown>
               </div>
             )}
 
             {recruiterReview && (
               <div className="bg-orange-900/20 border border-orange-500/50 rounded-xl p-4 mt-4">
                 <h4 className="text-xs text-orange-400 uppercase tracking-wider mb-2">Recruiter Feedback</h4>
-                <p className="text-sm text-gray-300 leading-relaxed">{recruiterReview}</p>
+                <Markdown className="text-sm text-gray-300 leading-relaxed">{recruiterReview}</Markdown>
               </div>
             )}
 

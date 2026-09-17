@@ -59,6 +59,7 @@ export default function NeuralLogsTerminal({ activeTopic }: { activeTopic?: stri
         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
           <span className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(229,89,130,0.8)]"></span>
           Neural System Logs
+          <span className="ml-2 text-[10px] font-medium uppercase tracking-wider text-gray-400 border border-gray-700 px-2 py-0.5 rounded-full" title="Illustrates how the agents coordinate; not live system output">Simulated</span>
         </h3>
         <div className="flex gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-gray-800"></div>

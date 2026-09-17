@@ -1,32 +1,51 @@
+import logging
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app import models  # noqa: F401  (registers tables on Base.metadata)
 from app.api.endpoints import router as api_router
+from app.core.database import Base, engine
+
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create tables on startup so a fresh database (e.g. a new Render instance) works immediately
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+
 
 app = FastAPI(
-    title="TechMentor AI Professor",
-    description="Backend API for the Autonomous Multi-Agent Learning Platform",
-    version="1.0.0",
+    title="TechMentor AI API",
+    description="Backend for CORTEX: AI coding room, mock interviews and an adaptive quiz tutor.",
+    version="1.1.0",
+    lifespan=lifespan,
 )
 
-# Allow the deployed frontend origin via env var; falls back to "*" for local dev.
+# Only the deployed frontend may call the API; "*" is allowed for local development only.
 _frontend_origin = os.getenv("FRONTEND_ORIGIN")
-allowed_origins = [_frontend_origin] if _frontend_origin else ["*"]
+allowed_origins = [origin.strip() for origin in _frontend_origin.split(",")] if _frontend_origin else ["*"]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_credentials=True,
+    allow_credentials=bool(_frontend_origin),  # browsers reject credentials with a wildcard origin
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(api_router, prefix="/api/v1")
 
+
 @app.get("/")
 async def root():
-    return {"message": "Welcome to TechMentor AI Professor API"}
+    return {"message": "TechMentor AI API is running. See /docs for the endpoints."}
+
 
 @app.get("/health")
 @app.head("/health")

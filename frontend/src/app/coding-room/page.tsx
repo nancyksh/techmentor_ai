@@ -1,4 +1,6 @@
 "use client";
+import Link from 'next/link';
+import Markdown from '@/components/Markdown';
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { apiFetch } from '@/lib/api';
@@ -9,7 +11,7 @@ export default function CodingRoom() {
   const [code, setCode] = useState('def two_sum(nums, target):\n    # Write your solution here\n    pass');
   const [language, setLanguage] = useState('python');
   const [question, setQuestion] = useState("Loading a random coding problem...");
-  const [starterCodes, setStarterCodes] = useState<any>({});
+  const [starterCodes, setStarterCodes] = useState<Record<string, string>>({});
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [isGenerating, setIsGenerating] = useState(true);
   const [isSlow, setIsSlow] = useState(false);
@@ -19,11 +21,8 @@ export default function CodingRoom() {
   const [spaceComplexity, setSpaceComplexity] = useState("N/A");
   const [bugs, setBugs] = useState("None");
 
-  const fetchQuestion = async () => {
+  const loadQuestion = async () => {
     try {
-      setIsGenerating(true);
-      setIsSlow(false);
-      setLoadError("");
       const res = await apiFetch("/api/v1/coding-room/generate-question", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -44,8 +43,18 @@ export default function CodingRoom() {
     }
   };
 
+  const fetchQuestion = () => {
+    setIsGenerating(true);
+    setIsSlow(false);
+    setLoadError("");
+    loadQuestion();
+  };
+
+  // Load the first problem on mount. State only changes after the request resolves,
+  // and isGenerating already starts as true, so no reset is needed here.
   useEffect(() => {
-    fetchQuestion();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadQuestion();
   }, []);
 
 
@@ -159,33 +168,33 @@ export default function CodingRoom() {
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
       
       <main className="relative container mx-auto px-4 py-8 flex flex-col min-h-screen">
-        <header className="flex justify-between items-center pb-6 border-b border-white/10 shrink-0">
-          <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+        <header className="flex flex-wrap justify-between items-center gap-4 pb-6 border-b border-white/10 shrink-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-3">
             <span className="text-indigo-500 font-extrabold tracking-tight">CORTEX</span>
             <span className="text-gray-500 font-light text-2xl">|</span>
             AI Coding Room
           </h1>
-          <div className="flex gap-4">
-            <a href="/" className="px-6 py-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10 font-medium">
+          <nav className="flex flex-wrap gap-2 sm:gap-4">
+            <Link href="/" className="px-4 sm:px-6 py-2 text-sm sm:text-base rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10 font-medium">
               Dashboard
-            </a>
-            <a href="/interview" className="px-6 py-2 rounded-full bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 transition-colors border border-indigo-500/30 font-medium">
+            </Link>
+            <Link href="/interview" className="px-4 sm:px-6 py-2 text-sm sm:text-base rounded-full bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 transition-colors border border-indigo-500/30 font-medium">
               Standard Interview
-            </a>
-            <button onClick={handleRunCode} disabled={isRunning} className="px-6 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 transition-colors font-medium shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center gap-2">
+            </Link>
+            <button onClick={handleRunCode} disabled={isRunning} className="px-4 sm:px-6 py-2 text-sm sm:text-base rounded-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 transition-colors font-medium shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center gap-2">
               {isRunning ? "Running..." : "Run Code"}
               {!isRunning && <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>}
             </button>
-            <button onClick={handleSubmit} disabled={isEvaluating} className="px-6 py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 transition-colors font-medium shadow-[0_0_15px_rgba(79,70,229,0.5)] flex items-center gap-2">
+            <button onClick={handleSubmit} disabled={isEvaluating} className="px-4 sm:px-6 py-2 text-sm sm:text-base rounded-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 transition-colors font-medium shadow-[0_0_15px_rgba(79,70,229,0.5)] flex items-center gap-2">
               {isEvaluating ? "Evaluating..." : "Submit Code"}
               {!isRunning && <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>}
             </button>
-            <button onClick={handleDebugCode} disabled={isDebugging} className="px-6 py-2 rounded-full bg-orange-600 hover:bg-orange-500 disabled:bg-gray-700 transition-colors font-medium shadow-[0_0_15px_rgba(234,88,12,0.3)] flex items-center gap-2">
+            <button onClick={handleDebugCode} disabled={isDebugging} className="px-4 sm:px-6 py-2 text-sm sm:text-base rounded-full bg-orange-600 hover:bg-orange-500 disabled:bg-gray-700 transition-colors font-medium shadow-[0_0_15px_rgba(234,88,12,0.3)] flex items-center gap-2">
               {isDebugging ? "Debugging..." : "Debug Code"}
               {!isDebugging && <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>}
             </button>
 
-          </div>
+          </nav>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6 flex-1 min-h-0">
@@ -197,7 +206,7 @@ export default function CodingRoom() {
                     <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     Problem Statement
                 </h2>
-                <p className="text-gray-300 mt-2 text-md leading-relaxed relative z-10">{question}</p>
+                <Markdown className="text-gray-300 mt-2 text-md leading-relaxed relative z-10">{question}</Markdown>
                 {isGenerating && isSlow && (
                   <div className="mt-2 flex items-center gap-2 text-xs text-amber-400 relative z-10">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
@@ -261,7 +270,7 @@ export default function CodingRoom() {
                </div>
                <div className="flex-1 p-4 font-mono text-sm overflow-y-auto custom-scrollbar">
                   {!terminalOutput && !terminalError && !isRunning && executionTime === null && (
-                    <span className="text-gray-600 italic">No output yet. Click 'Run Code' to execute.</span>
+                    <span className="text-gray-600 italic">No output yet. Click “Run Code” to execute.</span>
                   )}
                   {!terminalOutput && !terminalError && !isRunning && executionTime !== null && (
                     <span className="text-green-500/70 italic text-xs tracking-wider">Program executed successfully (no output).</span>
@@ -278,7 +287,7 @@ export default function CodingRoom() {
                   {debugExplanation && (
                     <div className="mt-4 bg-orange-900/20 border border-orange-500/30 p-3 rounded-lg">
                       <h4 className="text-orange-400 font-bold text-xs uppercase mb-1">AI Debugger Analysis</h4>
-                      <p className="text-gray-300 text-sm whitespace-pre-wrap font-sans">{debugExplanation}</p>
+                      <Markdown className="text-gray-300 text-sm font-sans">{debugExplanation}</Markdown>
                     </div>
                   )}
                </div>
@@ -322,9 +331,9 @@ export default function CodingRoom() {
                   </div>
                 </div>
                 {review && (
-                  <div className="mt-2 text-sm text-gray-300 leading-relaxed bg-black/20 p-3 rounded-lg border border-white/5">
+                  <Markdown className="mt-2 text-sm text-gray-300 leading-relaxed bg-black/20 p-3 rounded-lg border border-white/5">
                       {review}
-                  </div>
+                  </Markdown>
                 )}
             </div>
 

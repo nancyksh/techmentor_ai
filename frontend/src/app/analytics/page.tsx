@@ -1,4 +1,5 @@
 "use client";
+import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { readSessionHistory, SessionEntry } from '@/lib/sessionHistory';
 
@@ -59,9 +60,9 @@ export default function AnalyticsDashboard() {
               </div>
             )}
           </div>
-          <a href="/" className="px-6 py-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10 font-medium whitespace-nowrap">
+          <Link href="/" className="px-6 py-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10 font-medium whitespace-nowrap">
             Back to Dashboard
-          </a>
+          </Link>
         </header>
 
         {!hasData ? (

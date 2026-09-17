@@ -1,14 +1,16 @@
 import React from 'react';
 
 const agents = [
-  { name: 'NOVA', role: 'Master Orchestrator', status: 'Planning', color: 'indigo' },
-  { name: 'Research Agent', role: 'Data Retrieval', status: 'Idle', color: 'blue' },
-  { name: 'Quiz Agent', role: 'Assessment', status: 'Generating', color: 'purple' },
-  { name: 'Reflection Agent', role: 'Analysis', status: 'Idle', color: 'emerald' },
-  { name: 'Planner Agent', role: 'Roadmap', status: 'Updating', color: 'orange' },
+  { name: 'NOVA', role: 'Master Orchestrator' },
+  { name: 'Research Agent', role: 'Data Retrieval' },
+  { name: 'Quiz Agent', role: 'Assessment' },
+  { name: 'Reflection Agent', role: 'Analysis' },
+  { name: 'Planner Agent', role: 'Roadmap' },
 ];
 
-export default function AgentCommandCenter() {
+// Agents only show as active while a mission is actually running, instead of fixed fake statuses.
+export default function AgentCommandCenter({ activeTopic }: { activeTopic?: string | null }) {
+  const status = activeTopic ? 'Active' : 'Standby';
   return (
     <section className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
       <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
@@ -21,15 +23,18 @@ export default function AgentCommandCenter() {
           <div key={index} className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 hover:border-indigo-500/50 transition-colors group">
             <div className="flex justify-between items-start mb-2">
               <h4 className="text-white font-semibold text-sm">{agent.name}</h4>
-              <span className={`w-2 h-2 rounded-full mt-1 ${agent.status !== 'Idle' ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`}></span>
+              <span className={`w-2 h-2 rounded-full mt-1 ${activeTopic ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`}></span>
             </div>
             <p className="text-xs text-gray-400 mb-3">{agent.role}</p>
             <div className="inline-block px-2 py-1 bg-white/5 rounded text-xs font-medium text-gray-300">
-              {agent.status}
+              {status}
             </div>
           </div>
         ))}
       </div>
+      {!activeTopic && (
+        <p className="text-xs text-gray-500 mt-4">Click “Start Autonomous Mode” to deploy the agents on a topic.</p>
+      )}
     </section>
   );
 }

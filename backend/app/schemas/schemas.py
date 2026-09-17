@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from typing import Optional, Dict
 
 class UserBase(BaseModel):
@@ -12,8 +12,7 @@ class UserResponse(UserBase):
     id: int
     role: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DigitalTwinBase(BaseModel):
     subject_mastery: Dict[str, float] = {}
@@ -26,12 +25,12 @@ class DigitalTwinResponse(DigitalTwinBase):
     id: int
     user_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
+# Length limits keep prompts (and Groq costs) bounded and reject abusive payloads early.
 class InterviewEvaluationRequest(BaseModel):
-    question: str
-    answer: str
+    question: str = Field(max_length=4000)
+    answer: str = Field(max_length=8000)
 
 class InterviewEvaluationResponse(BaseModel):
     review: str
@@ -42,11 +41,11 @@ class InterviewEvaluationResponse(BaseModel):
     recruiter_review: Optional[str] = None
 
 class CodingEvaluationRequest(BaseModel):
-    question: str
-    code: str
-    language: str
-    stdout: str = ""
-    stderr: str = ""
+    question: str = Field(max_length=8000)
+    code: str = Field(max_length=20000)
+    language: str = Field(max_length=20)
+    stdout: str = Field(default="", max_length=20000)
+    stderr: str = Field(default="", max_length=20000)
 
 class CodingEvaluationResponse(BaseModel):
     review: str
@@ -55,8 +54,8 @@ class CodingEvaluationResponse(BaseModel):
     bugs_found: str
 
 class CodeExecutionRequest(BaseModel):
-    code: str
-    language: str
+    code: str = Field(max_length=20000)
+    language: str = Field(max_length=20)
 
 class CodeExecutionResponse(BaseModel):
     stdout: str
@@ -65,27 +64,27 @@ class CodeExecutionResponse(BaseModel):
     execution_time_ms: float
 
 class CodeDebugRequest(BaseModel):
-    code: str
-    language: str
-    error: str
+    code: str = Field(max_length=20000)
+    language: str = Field(max_length=20)
+    error: str = Field(max_length=20000)
 
 class CodeDebugResponse(BaseModel):
     explanation: str
     fixed_code: str
 
 class QuestionGenerationRequest(BaseModel):
-    subject: str
-    difficulty: str = "Medium"
+    subject: str = Field(max_length=200)
+    difficulty: str = Field(default="Medium", max_length=20)
 
 class QuestionGenerationResponse(BaseModel):
     question_text: str
     starter_code: Dict[str, str]
 
 class QuizTutorRequest(BaseModel):
-    topic: str
-    mission_type: str = "Learning Mission"
-    history: list[Dict[str, str]] = []
-    answer: str
+    topic: str = Field(max_length=300)
+    mission_type: str = Field(default="Learning Mission", max_length=50)
+    history: list[Dict[str, str]] = Field(default_factory=list, max_length=20)
+    answer: str = Field(max_length=8000)
 
 class QuizTutorResponse(BaseModel):
     reply: str

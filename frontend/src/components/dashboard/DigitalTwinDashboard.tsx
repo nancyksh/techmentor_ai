@@ -1,8 +1,10 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useSessionHistory, latestScoreByTopic } from '@/lib/useSessionHistory';
 
 export default function DigitalTwinDashboard({ activeTopic, masteryTarget = 0 }: { activeTopic?: string | null; masteryTarget?: number }) {
   const [newTopicProgress, setNewTopicProgress] = useState(0);
+  const pastScores = latestScoreByTopic(useSessionHistory());
 
   useEffect(() => {
     if (activeTopic) {
@@ -16,10 +18,9 @@ export default function DigitalTwinDashboard({ activeTopic, masteryTarget = 0 }:
         });
       }, 80);
       return () => clearInterval(interval);
-    } else {
-      setNewTopicProgress(0);
     }
   }, [activeTopic, masteryTarget]);
+  const shownProgress = activeTopic ? newTopicProgress : 0;
 
   // Extract the core subject from sentences like "prepare me in 10 days for Computer Networks exam"
   const extractSubject = (text: string | null | undefined) => {
@@ -48,10 +49,10 @@ export default function DigitalTwinDashboard({ activeTopic, masteryTarget = 0 }:
               <div className="p-3 bg-indigo-900/30 border border-indigo-500/50 rounded-xl mb-4 animate-in fade-in slide-in-from-left-4 duration-500">
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-white font-bold max-w-[200px] truncate" title={cleanTopic}>{cleanTopic}</span>
-                  <span className="text-indigo-400 font-bold">{newTopicProgress}%</span>
+                  <span className="text-indigo-400 font-bold">{shownProgress}%</span>
                 </div>
                 <div className="w-full bg-gray-900 rounded-full h-2 overflow-hidden border border-gray-800">
-                  <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500 ease-out" style={{ width: `${newTopicProgress}%` }}></div>
+                  <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500 ease-out" style={{ width: `${shownProgress}%` }}></div>
                 </div>
                 <p className="text-xs text-indigo-300 mt-2 italic flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
@@ -60,33 +61,23 @@ export default function DigitalTwinDashboard({ activeTopic, masteryTarget = 0 }:
               </div>
             )}
 
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-300">Operating Systems</span>
-                <span className="text-cyan-500">65%</span>
+            {/* Past results come from saved quiz/interview sessions, not fixed placeholder values */}
+            {pastScores.map(({ topic, score }) => (
+              <div key={topic}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-300 max-w-[200px] truncate" title={topic}>{topic}</span>
+                  <span className={score >= 60 ? 'text-cyan-500' : 'text-orange-500'}>{score}%</span>
+                </div>
+                <div className="w-full bg-gray-800 rounded-full h-2">
+                  <div className={`bg-gradient-to-r ${score >= 60 ? 'from-cyan-600 to-blue-600' : 'from-red-600 to-orange-600'} h-2 rounded-full`} style={{ width: `${score}%` }}></div>
+                </div>
               </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div className="bg-gradient-to-r from-cyan-600 to-blue-600 h-2 rounded-full" style={{ width: '65%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-300">DBMS</span>
-                <span className="text-cyan-500">82%</span>
-              </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div className="bg-gradient-to-r from-cyan-600 to-blue-600 h-2 rounded-full" style={{ width: '82%' }}></div>
-              </div>
-            </div>
-            <div className="opacity-70">
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-400">Computer Networks</span>
-                <span className="text-orange-500">40%</span>
-              </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div className="bg-gradient-to-r from-red-600 to-orange-600 h-2 rounded-full" style={{ width: '40%' }}></div>
-              </div>
-            </div>
+            ))}
+            {!activeTopic && pastScores.length === 0 && (
+              <p className="text-sm text-gray-500 bg-black/20 border border-white/5 rounded-xl p-4">
+                No results yet. Finish a quiz or mock interview and your scores per topic will appear here.
+              </p>
+            )}
           </div>
         </div>
         

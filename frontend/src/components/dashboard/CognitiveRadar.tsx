@@ -1,7 +1,16 @@
+"use client";
 import React from 'react';
+import { useSessionHistory } from '@/lib/useSessionHistory';
 
 export default function CognitiveRadar({ activeTopic }: { activeTopic?: string | null }) {
   const topicLabel = activeTopic ? ` [${activeTopic}]` : '';
+  const history = useSessionHistory();
+  const average = (type: "Quiz" | "Interview") => {
+    const scores = history.filter(h => h.type === type).map(h => h.score);
+    return scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+  };
+  const quizAvg = average("Quiz");
+  const interviewAvg = average("Interview");
   return (
     <section className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl relative overflow-hidden">
       <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2 relative z-10">
@@ -38,26 +47,28 @@ export default function CognitiveRadar({ activeTopic }: { activeTopic?: string |
         <div className="w-3 h-3 bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,0.8)] z-10"></div>
       </div>
       
+      {/* Stats are computed from saved sessions; the radar above is decorative */}
       <div className="mt-6 space-y-3">
         <div>
           <div className="flex justify-between text-xs text-gray-400 mb-1">
-            <span>Pattern Recognition<span className="text-purple-300/70 ml-1">{topicLabel}</span></span>
-            <span className="text-purple-400 font-bold">94%</span>
+            <span>Average Quiz Score<span className="text-purple-300/70 ml-1">{topicLabel}</span></span>
+            <span className="text-purple-400 font-bold">{quizAvg === null ? '—' : `${quizAvg}%`}</span>
           </div>
           <div className="w-full bg-gray-800 rounded-full h-1.5">
-            <div className="bg-purple-500 h-1.5 rounded-full w-[94%] shadow-[0_0_10px_rgba(168,85,247,0.5)]"></div>
+            <div className="bg-purple-500 h-1.5 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.5)]" style={{ width: `${quizAvg ?? 0}%` }}></div>
           </div>
         </div>
-        
+
         <div>
           <div className="flex justify-between text-xs text-gray-400 mb-1">
-            <span>Memory Retention Sync<span className="text-indigo-300/70 ml-1">{topicLabel}</span></span>
-            <span className="text-indigo-400 font-bold">88%</span>
+            <span>Average Interview Score<span className="text-indigo-300/70 ml-1">{topicLabel}</span></span>
+            <span className="text-indigo-400 font-bold">{interviewAvg === null ? '—' : `${interviewAvg}%`}</span>
           </div>
           <div className="w-full bg-gray-800 rounded-full h-1.5">
-            <div className="bg-indigo-500 h-1.5 rounded-full w-[88%] shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+            <div className="bg-indigo-500 h-1.5 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]" style={{ width: `${interviewAvg ?? 0}%` }}></div>
           </div>
         </div>
+        <p className="text-[11px] text-gray-500">Based on {history.length} saved {history.length === 1 ? 'session' : 'sessions'}.</p>
       </div>
     </section>
   );
